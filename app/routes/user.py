@@ -96,7 +96,7 @@ def update_user(user_id):
 @bp.route('/getUser/<user_id>', methods=['GET'])
 @login_required
 def get_user(user_id):
-    print('get_user')
+    print(user_id)
     try:
         user = users_collection.find_one({'_id': ObjectId(user_id)})
         if not user:

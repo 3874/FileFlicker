@@ -146,6 +146,11 @@
     
         $(document).ready(async function() {
             const FFsession = getSessionFromMemory();
+
+            if (FFsession == null) {
+                alert('No session');
+                window.location.href = '/';
+            }
             let resp = await getUser(FFsession['user_id'], FFsession['session_token']);
             if (resp && resp.status == 'success') {
               ProfileModal();

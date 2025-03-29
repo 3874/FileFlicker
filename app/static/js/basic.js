@@ -21,7 +21,7 @@ $(document).ready(function() {
         };
 
         $.ajax({
-            url: `/updateUser/${userId}`,
+            url: `/users/updateUser/${userId}`,
             type: 'PUT',
             headers: {
                 'Authorization': 'Bearer ' + FFsession['session_token']
@@ -47,7 +47,7 @@ $(document).ready(function() {
 function SignOut(){
 
     $.ajax({
-        url: '/signout', // 로그아웃 요청 URL
+        url: '/auth/signout', // 로그아웃 요청 URL
         type: 'POST', // POST 메서드 사용
         success: function(response) {
             if (response.status === 'success') {
@@ -67,7 +67,7 @@ function SignOut(){
 }
 
 function profileDataMapping(info) {
-    console.log(info);
+
     $('#profileId').val(info._id); 
     $('#profile_ID').val(info.ID); 
     $('#profile_name').val(info.name); // 사용자 이름
@@ -83,6 +83,7 @@ function profileDataMapping(info) {
 
 function getSessionFromMemory() {
     const JSON_session = localStorage.getItem('fileflicker_session');
+
     if (!JSON_session) {
         window.location.href = '/signin';
         return;
@@ -156,7 +157,7 @@ function ProfileModal() {
 
 async function downloadFile(fileId, fileName, mode) {
     try {
-        const response = await fetch(`/downloadFile/${fileId}`, {
+        const response = await fetch(`/files/downloadFile/${fileId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -218,7 +219,7 @@ async function downloadFileFromS3(s3_key) {
 
 async function registMissingFilesInAWS() {
     try {
-        const response = await fetch('/registMissingFilesInAWS', {
+        const response = await fetch('/files/registMissingFilesInAWS', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

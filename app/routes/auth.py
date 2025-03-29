@@ -10,7 +10,11 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @bp.route('/signout', methods=['POST'])
 def logout():
-    session.pop('user_id', None)
+    user_id = session.get('user_id')
+    if user_id:
+        # MongoDB에서 세션 데이터 삭제
+        current_app.mongo_db.sessions.delete_one({'_id': ObjectId(user_id)})
+    session.clear()
     return jsonify({'status': 'success', 'message': 'Logged out'})
 
 
@@ -38,17 +42,23 @@ def authenticate_user():
             return jsonify({'status': 'pending', 'message': 'User role is not assigned. Contact Admin.'}), 403
 
         session_token = base64.urlsafe_b64encode(os.urandom(32)).decode('utf-8')
+        current_time = datetime.now(timezone.utc) 
+        user_id = str(user['_id'])
+        
         session_data = {
-            'user_id': str(user['_id']),
+            'user_id': user_id,
             'session_token': session_token,
-            'created_at': datetime.now(timezone.utc)
+            'created_at': current_time  # 현재 시간 사용
         }
 
+        # MongoDB sessions 컬렉션에 저장
         current_app.mongo_db.sessions.update_one(
-            {'_id': ObjectId(session_data['user_id'])},
-            {'$set': session_data},
+            {'user_id': user_id},
+            {'$set': {'session_token': session_token, 'created_at': current_time}},
             upsert=True
         )
+
+        session['user_id'] = session_data['user_id']
 
         return jsonify({
             'status': 'success',

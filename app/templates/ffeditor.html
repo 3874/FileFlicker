@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://unpkg.com/tailwindcss@1.9.6/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+</head>
+<body class="h-screen overflow-hidden flex items-center justify-center w-full" style="background: #edf2f7;">
+  <div class="flex h-screen antialiased text-gray-800 w-full">
+    <div class="flex flex-row h-full w-full overflow-x-hidden">
+      <div class="flex flex-col flex-auto h-full p-6 w-full">
+        <div class="flex flex-col flex-auto flex-shrink-0 rounded-2xl bg-gray-100 h-full p-4 w-full">
+          <div class="text-center text-xl font-bold mb-4 w-full">Report (Markdown style)</div>
+          <div class="flex flex-col h-full overflow-x-auto mb-4 w-full">
+            <div class="flex flex-col h-full w-full">
+              <textarea id="editor" class="border rounded p-2 w-full h-64"></textarea>
+            </div>
+          </div>
+          <div>
+            <button id="saveBtn" class="bg-blue-500 text-white rounded p-2 mt-4">
+              <small>Save</small>
+            </button>
+            <button id="shareBtn" class="bg-red-500 text-white rounded p-2 mt-4">
+              <small>Share</small>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.1.3/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="/static/js/basic.js"></script>
+<script src="/static/js/ai_tools.js"></script>
+<script>
+      $(document).ready(function() {
+        const FFsession = getSessionFromMemory();
+        const summaryContent = localStorage.getItem('summaryContent');
+        let content = marked.parse(summaryContent);
+
+        var simplemde = new SimpleMDE({ 
+            element: document.getElementById("editor"),
+            autosave: {
+                enabled: true,
+                uniqueId: "editor",
+                delay: 1000
+            },
+            toolbar: [
+                "bold", "italic", "heading", "|", 
+                "quote", "unordered-list", "ordered-list", "|", 
+                "link", "image", "|", 
+                "clean", "preview", "side-by-side", "fullscreen"
+            ]
+        });
+
+        if (summaryContent) {
+          simplemde.value(summaryContent); 
+        }
+
+        $('#saveBtn').click(function() {
+            const markdownContent = simplemde.value();
+            // Convert markdown to HTML
+            const htmlContent = marked.parse(markdownContent);
+            
+            // Create a temporary div to hold the HTML content
+            const element = document.createElement('div');
+            element.innerHTML = htmlContent;
+            
+            // Configure PDF options
+            const opt = {
+                margin: 1,
+                filename: 'report.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // Generate PDF
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Clean up
+                element.remove();
+            }).catch(err => {
+                console.error('PDF generation failed:', err);
+                alert('Failed to generate PDF');
+            });
+        });
+
+        $('#shareBtn').click(async function() {
+            let markdownContent = simplemde.value();
+            let content = marked.parse(markdownContent);
+            let recipientEmail = prompt("Input the recipient email:", "example@example.com");
+
+            await $.ajax({
+                url: '/shareHTML', 
+                method: 'POST',
+                contentType: 'application/json',
+                headers: {
+                        'Authorization': 'Bearer ' + FFsession['session_token']
+                      },
+                data: JSON.stringify({ email: recipientEmail, content: content }), 
+                success: function(response) {
+                    alert('The email has been successfully sent.'); 
+                },
+                error: function(xhr, status, error) {
+                    console.error('Fail to send Email:', error);
+                    alert('Email sending failed.'); 
+                }
+            });
+        });
+
+    });
+
+</script>
+</html>

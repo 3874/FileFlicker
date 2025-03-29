@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>FileFlicker</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+      body {
+        background-color: #f4f6f9;
+      }
+      .login-page {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .login-box {
+        width: 360px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #fff;
+      }
+      .login-logo a {
+        font-size: 24px;
+        color: #333;
+      }
+      .form-control-feedback {
+        color: #999;
+      }
+      .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+      }
+      .social-auth-links a {
+        color: #fff;
+      }
+      .button-container {
+        display: flex;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body class="login-page">
+    <div class="login-box">
+      <div class="login-logo">
+        <a href="#" style="color: red;"><b>File</b>Flicker</a>
+      </div>
+      <div class="login-box-body">
+        <p class="login-box-msg">Sign-In Form for ADMIN</p>
+        <form action="/" method="post">
+          <div class="form-group has-feedback">
+            <input type="text" class="form-control" placeholder="Email"/>
+            <span class="glyphicon glyphicon-envelope form-control-feedback"></span>
+          </div>
+          <div class="form-group has-feedback">
+            <input type="password" class="form-control" placeholder="Password"/>
+            <span class="glyphicon glyphicon-lock form-control-feedback"></span>
+          </div>
+          <div class="button-container">
+            <button type="submit" class="btn btn-danger btn-block btn-flat">Sign In</button>
+          </div>
+        </form>
+        <br>
+        <a href="#" id="forgotpw">I forgot my password</a><br>
+        <a href="/signup" class="text-center">Register a new membership</a>
+      </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+
+    <script type="text/javascript">
+      $(document).ready(function() {
+        $('form').on('submit', function(event) {
+          event.preventDefault(); // 폼의 기본 제출 동작을 막습니다.
+    
+          var userID = $('input[type="text"]').val();
+          var password = $('input[type="password"]').val();
+
+          var emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+          if (!emailPattern.test(userID)) {
+            alert('Input valid email.');
+            return;
+          }
+    
+          $.ajax({
+            url: '/authenticateUser',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ ID: userID, password: password }),
+            success: function(response) {
+              if (response.status === 'success') {
+                const session = response.session;
+                localStorage.setItem('fileflicker_session', JSON.stringify(session));
+                window.location.href = "/projectsAdmin";
+              } else if (response.status === 'pending') {
+                alert(response.message);
+              } else {
+                // 로그인 실패 시, 오류 메시지를 표시
+                console.log(response);
+              }
+            },
+            error: function() {
+              // 서버 오류 시, 오류 메시지를 표시
+              alert('서버 오류가 발생했습니다. 다시 시도해 주세요.');
+            }
+          });
+        });
+
+        $('#forgotpw').on('click', function(event) {
+          event.preventDefault(); 
+          alert('If you forgot the email, please email to the admin');
+        });
+      });
+    </script>
+
+  </body>
+</html>

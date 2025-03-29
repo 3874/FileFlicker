@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FileFlicker</title>
+    <link href="https://unpkg.com/tailwindcss@1.9.6/dist/tailwind.min.css" rel="stylesheet">
+
+    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+    <link href="http://code.ionicframework.com/ionicons/2.0.0/css/ionicons.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css" />
+    <link href="/static/css/AdminLTE.min.css" rel="stylesheet" type="text/css" />
+    <link href="/static/css/skins/_all-skins.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+    #loadingOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .main-footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background: white;
+        z-index: 1000;
+        padding: 1rem;
+        left: 0;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    }
+    .content-wrapper {
+        margin-left: 230px; 
+        margin-top: 60px; 
+        padding: 20px;
+        padding-bottom: 60px;
+        position: relative;
+        min-height: calc(100vh - 20px);
+        z-index: 1;
+    }
+    .main-sidebar {
+        position: fixed;
+        top: 2vh;
+        left: 2vh;
+        height: calc(100vh - 10px);
+        overflow-y: auto;
+        background: white;
+        z-index: 1001;
+        width: 200px;
+        padding-bottom: 80px;
+    }
+    .main-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1002;
+        background: white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .sidebar-footer {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        padding: 15px;
+        background: inherit;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    #websearchBtn:focus,
+    #websearchBtn:active {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    
+    </style>   
+</head>
+<body class="skin-blue">
+    <div class="wrapper">
+
+        <header class="main-header">
+            <a href="/" class="logo"><b>File</b>Flicker</a>
+            <nav class="navbar navbar-static-top" role="navigation">
+            </nav>
+          </header>
+    
+          <aside class="main-sidebar">
+            <section class="sidebar">
+                <div class="d-flex justify-content-center">
+                    <div>
+                        <p class="text-blue-300 mb-2 text-3xl"><a href="javascript:history.back()" class="btn btn-sm"><i class="fas fa-arrow-left"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a> Overview</p>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <p id="title" class="text-purple-300 mb-2 text-2xl"></p>
+                    </div>
+                
+                    <div class="text-center">
+                        <p id="summary" class="text-gray-100 mb-2 text-xl"></p>
+                    </div>
+                
+                    <div class="text-center">
+                        <p id="projectId" class="text-gray-100 mb-2 text-xl"></p>
+                    </div>
+                
+                    <div class="text-center">
+                        <p id="createAt" class="text-gray-100 mb-2 text-xl"></p>
+                    </div>
+                
+                    <div class="text-center">
+                        <p id="updateAt" class="text-gray-100 mb-2 text-xl"></p>
+                    </div>
+                
+                    <div class="text-center">
+                        <p id="relatedcompany" class="text-gray-100 mb-2 text-xl"></p>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center w-full px-10">
+                    <div class="d-flex flex-column align-items-center w-full">
+                        <button id="showPrompt" class="btn btn-warning btn-sm btn-flat w-100 mb-2">
+                            Prompts
+                        </button>
+                        <button id="makeReport" class="btn btn-primary btn-sm btn-flat w-100">
+                            AI Report
+                        </button>
+                    </div>
+                </div>
+                <hr>
+                <div class="mt-n2">
+                    <div class="d-flex text-center">
+                        <span  class="text-gray-100"><b>File Bank</b> <small>(max 10)</small></span>
+                        <button id="reloadDB" class="btn btn-tool text-gray-100" style="display: none;"><i class="fas fa-sync"></i></button>
+                    </div>
+    
+                    <div class="mt-1 custom-scrollbar" id="relatedfile" style="max-height: 200px; overflow-y: auto;">
+                    </div>
+                </div>
+
+                <div class="sidebar-footer px-1">
+                    <button id="removeChatButton" class="btn btn-success btn-sm btn-round w-full my-3 mx-1">
+                        <i class="fas fa-trash"></i> Clear chat
+                    </button>
+                    <button id="removeProjectButton" class="btn btn-danger btn-sm btn-round w-full my-3 mx-1"> 
+                        <i class="fas fa-times"></i> Remove Project
+                    </button>
+                </div>
+            </section>
+        </aside>
+    
+        <div class="content-wrapper"> 
+            <section class="content-header">
+                <h3 style="display: inline-block;">Project Chat</h3>
+                <ol class="breadcrumb">
+                  <li><a href="/"><i class="fa fa-dashboard"></i> Home</a></li>
+                  <li class="active">Project Chat</li>
+                </ol>
+            </section>
+
+            <section class="content">
+                <div class="container-fluid w-full">
+                    <div  id="resultsContent" class="chat-container">
+                        <!-- Chat content will be inserted here -->
+                    </div>
+                </div>
+            </section>
+        </div>
+          
+        <footer class="main-footer">
+            <div class="container-fluid w-full py-4">
+                <div class="col-12 col-md-10 col-lg-10">
+                    <div class="input-group input-group">
+                        <input type="file" id="fileInput" accept=".pdf, .ppt, .pptx, .doc, .docx" style="display:none;">
+                        <span class="input-group-addon">
+                            <button id="filefindButton">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                        </span>
+                        <span class="input-group-addon">
+                            <button id="websearchBtn">
+                                <span id="websearchIcon">🌐</span>
+                            </button>
+                        </span>
+                        <input type="text" class="form-control" id="searchQuery">
+                        <span class="input-group-btn">
+                            <button class="btn btn-info btn-flat" id="searchButton" type="button">Send</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        
+    </div>
+
+
+    <div class="modal fade" id="editPromptModal" tabindex="-1" role="dialog" aria-labelledby="editPromptModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPromptModalLabel">Prompt Editor</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="promptEditContainer">
+                <!-- 프롬프트 편집 필드가 여기에 추가됩니다. -->
+            </div>
+
+            <div class="modal-footer">
+                <div class="form-group">                
+                <button type="button" class="btn btn-primary" id="savePrompts">Save</button>
+                <button type="button" class="btn btn-info" id="addPrompt">New</button>
+                <button type="button" class="btn btn-success" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="fileSelectModal" tabindex="-1" role="dialog" aria-labelledby="fileSelectModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><span id="fileSelectModalLabel">Upload File</span>&nbsp;&nbsp;<button id="FromPCButton" class="btn btn-sm btn-warning"><small>From PC</small></button></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mt-4">
+                    <table id="fileTable" class="display table table-striped table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be dynamically added here -->
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="selectPromptModal" tabindex="-1" role="dialog" aria-labelledby="selectPromptModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="selectPromptModalLabel">프롬프트 선택</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="promptButtonContainer">
+                    <!-- 버튼이 여기에 추가됩니다. -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="fileDetailModal" tabindex="-1" role="dialog" aria-labelledby="fileDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><span id="modalFileName">File Details</span></h5>
+                </div>
+                <div class="modal-body">
+                    <h6 hidden>ID:</h6>
+                    <p id="fileID" hidden></p>
+                    <h6>Summary: &nbsp;<small><button id="storeInVectorDB" class="btn btn-sm btn-danger">Sync To Vector</button></small></h6>
+                    <textarea id="modalSummary" style="font-size: 12px; width: 100%;" rows="15" readonly></textarea>
+                    <hr>
+                    <h6>File Location: &nbsp;<small><button id="downloadFileBtn" class="btn btn-sm btn-success">Download</button></small></h6>
+                    <p>
+                        <strong id="modalFileLocation"></strong>
+                    </p>
+                    <hr>
+                    <h6>Tags:</h6>
+                    <textarea id="modalTags" style="font-size: 12px; width: 100%; height: 50px;" readonly></textarea>
+                    <hr>
+                    <h6>Comment:</h6>
+                    <textarea id="modalComment" style="font-size: 12px; width: 100%; height: 50px;" readonly></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="loadingOverlay" style="display: none;">
+        <i class="fa fa-refresh fa-spin fa-2x"></i>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.10/dist/umd/popper.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.1.3/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pptx-parse/1.0.4/pptx-parse.min.js"></script>
+    <script src="/static/js/basic.js"></script>
+    <script src="/static/js/ai_tools.js"></script>
+    <script>
+    $(document).ready(function() {
+        let shared_users;
+        const FFsession = getSessionFromMemory();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const projectId = urlParams.get('projectId');
+        let pLength = 25;
+        const MaxNoFiles = 10;
+        let webMode = 'no';
+        let relatedFiles, promptsJSON;
+        let fileTable = $('#fileTable').DataTable({
+            responsive: true,
+            lengthChange: true,
+            info: false,
+            scrollY: true,
+            paging: true,
+            order: [[0, 'asc']], 
+            serverSide: true,
+            ajax: {
+                url: '/files',
+                dataSrc: 'data',
+                headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token']
+                  },
+            },
+            columns: [
+                { data: '_id', title: 'File ID', visible: false }, 
+                { data: 'file_name', title: 'File Name',  render: function(data) { return truncateText(data, 30); } },
+                { data: 'summary', title: 'Summary', render: function(data) { return truncateText(data, 50); } }, 
+            ],
+            pageLength: pLength, 
+            initComplete: function() {
+                $('#fileTable').css('font-size', '10px'); 
+            },
+        });
+
+        $('#fileSelectModal').on('shown.bs.modal', function () {
+            fileTable.columns.adjust().draw();
+        });
+
+        if (!projectId) {
+            alert('Cannot start project. ProjectId is required.');
+            $('#searchButton').prop('disabled', true); 
+        } else {
+        $.ajax({
+                url: `/projects/getProject/${projectId}`,
+                method: 'GET',
+                headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token']
+                  },
+                success: function(response) {
+                    if (response && response.data) { 
+                        const title = response.data.title || 'No Title';
+                        const summary = response.data.summary || 'No Summary'; 
+                        relatedFiles = response.data.related_files;
+                        $('#title').text(decodeURIComponent(title));
+                        $('#projectId').text(response.data.projectId);
+                        $('#summary').text(decodeURIComponent(summary));
+                        const createAt = formatDate(response.data.createdAt);
+                        const updateAt = formatDate(response.data.updatedAt);
+                        $('#createAt').text(createAt);
+                        $('#updateAt').text(updateAt);
+                        $('#resultsContent').html(decodeURIComponent(response.data.contents));
+                        fetchRelatedFiles(relatedFiles);
+                        shared_users = response.data.shared;
+        
+                    } else {
+                        alert("유효하지 않은 응답입니다.");
+                    }
+
+                },
+                error: function(xhr) {
+                    // 프로젝트가 없을 경우 경고 메시지 표시
+                    alert('프로젝트를 찾을 수 없습니다.');
+                    $('#searchButton').prop('disabled', true);
+                }
+            });
+        }
+
+        $('#fileTable tbody').on('click', 'tr', function () {
+            const data = fileTable.row(this).data();
+            if (!relatedFiles.includes(data._id)) {
+                relatedFiles.push(data._id);
+                updateProjectData({ related_files: relatedFiles });
+                fetchRelatedFiles(relatedFiles);
+            } else {
+                alert('이미 참고중입니다.');
+            }
+            $('#fileSelectModal').modal('hide');
+        });
+
+        $('#downloadFileBtn').click(async function() {
+            const fileId = $('#fileID').text();
+            const fileName = $('#modalFileName').text();
+            await downloadFile(fileId, fileName, "download");
+        });
+
+        $('#websearchBtn').click(function () {
+            const icon = $('#websearchIcon');
+            if (icon.text() === '🌐') {
+                icon.text('🌍'); 
+                webMode = 'yes';
+            } else {
+                icon.text('🌐'); 
+                webMode = 'no';
+            }
+        });
+
+        $('#searchButton').click(async function() {
+            const messageId = Date.now();
+            const SearchEngine = 'yahoo';
+            const full_query = $('#searchQuery').val();
+            $('#searchQuery').val('');
+
+            let query = '';
+            let fileIdMatch = full_query.match(/^\[([^\]]+)\]/);
+            $('#loadingOverlay').show();
+
+            if (webMode === 'no') {
+                let SearchfileId = '';
+                let response1 = '';
+                if (fileIdMatch) {
+                    $('#searchQuery').val(`${fileIdMatch[0]} `);
+                    SearchfileId = fileIdMatch[1]; 
+                    query = full_query.replace(fileIdMatch[0], '').trim(); 
+                    appendChatMe(messageId, query);
+                    response1 = await SearchInFileInVectorDB(query, SearchfileId);
+                } else {
+                    query = full_query;
+                    appendChatMe(messageId, query);
+                    response1 = await sendMessageToAI(query, projectId);
+                }
+
+                if (response1) {
+                    const md = window.markdownit();
+                    const html_code = md.render(response1);
+                    appendChatAI(messageId, html_code);
+                    const contents = $('#resultsContent').html();
+                    try {
+                        updateProjectData({ contents: encodeURIComponent(contents) });
+                    } catch (error) {
+                        console.error('프로젝트 데이터 업데이트 중 오류 발생:', error);
+                    }
+                } else {
+                    $(`.chatmessage[data-id="${messageId}"]`).remove(); 
+                    alert('Time out!!!');
+                }
+
+            } else {
+                query = full_query;
+                appendChatMe(messageId, `[${SearchEngine}] ${query}`);
+                let KKurl = `https://search.yahoo.com/search?p=${encodeURIComponent(query)}`;
+                let KKresp = await extractContent(KKurl);
+                $('#loadingOverlay').hide();
+                let ArrResp = await parseSearchResults(KKresp, SearchEngine);
+
+                let resultItem = '';
+                ArrResp.forEach(result => {
+                    resultItem += `
+                        <div class="result-item">
+                            <h5><a href="${result.link}" target="_blank">${result.title}</a></h5>
+                            <p>${result.snippet}</p>
+                            <button class="text-extract-btn text-white bg-purple-500 rounded p-1 text-sm mt-4"" >Text Extract</button>
+                        </div>
+                        <hr>
+                    `;
+                });
+                appendChatAI(messageId, resultItem);
+                const Kcontents = $('#resultsContent').html();
+                try {
+                    updateProjectData({ contents: encodeURIComponent(Kcontents) });
+                } catch (error) {
+                    console.error('Error during project updating:', error);
+                }
+            }
+
+        });
+
+        $('#searchQuery').keypress(function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // 기본 Enter 동작 방지
+                $('#searchButton').click(); // 검색 버튼 클릭 이벤트 발생
+            }
+        });
+
+        $('#title').on('click', function() {
+            const currentTitle = $(this).text();
+            const input = $('<input>', {
+                type: 'text',
+                value: currentTitle === 'No Title' ? '' : currentTitle,
+                class: 'form-control',
+                id: 'titleInput'
+            });
+
+            $(this).replaceWith(input);
+            input.focus();
+
+            input.on('blur', function() {
+                const newTitle = $(this).val();
+                updateProjectData({ title: encodeURIComponent(newTitle) }); 
+                $(this).replaceWith($('<span>', { text: newTitle, id: 'title' }));
+                window.location.reload();
+            });
+
+            input.on('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    const newTitle = $(this).val();
+                    updateProjectData({ title: encodeURIComponent(newTitle) }); 
+                    $(this).replaceWith($('<span>', { text: newTitle, id: 'title' }));
+                    window.location.reload();
+                }
+            });
+        });
+        
+        $('#summary').on('click', function() {
+            const currentSummary = $(this).text();
+            const input = $('<input>', {
+                type: 'text',
+                value: currentSummary === 'No Summary' ? '' : currentSummary,
+                class: 'form-control',
+                id: 'summaryInput'
+            });
+
+            $(this).replaceWith(input);
+            input.focus();
+
+            input.on('blur', function() {
+                const newSummary = $(this).val();
+                updateProjectData({ summary: encodeURIComponent(newSummary) }); // 요약 업데이트
+                $(this).replaceWith($('<span>', { text: newSummary, id: 'summary' }));
+                window.location.reload();
+            });
+
+            input.on('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    const newSummary = $(this).val();
+                    updateProjectData({ summary: encodeURIComponent(newSummary) }); // 요약 업데이트
+                    $(this).replaceWith($('<span>', { text: newSummary, id: 'summary' }));
+                    window.location.reload();
+                }
+            });
+        });
+
+        $('#removeChatButton').click(function() {
+            const confirmDelete = confirm("채팅 내용을 정말로 지우시겠습니까?");
+            if (confirmDelete) {
+                updateProjectData({ contents: '' });
+                $('#resultsContent').html('');
+            }
+        });
+
+        $('#removeProjectButton').click(function() {
+            const confirmDelete = confirm('Do you want to remove this project?');
+            if (confirmDelete) {
+
+                $.ajax({
+                    url: `/projects/removeProject/${projectId}`,
+                    method: 'DELETE',
+                    headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token']
+                    },
+                    success: function(response) {
+                        alert('Successfully deleted.');
+                        window.location.href = '/projectlist';
+                    },
+                    error: function(xhr) {
+                        alert('Fail to delete. Please try again.');
+                    }
+                });
+            }
+        });
+
+        $('#FromPCButton').click(function() {
+            $('#fileSelectModal').modal('hide');
+            $('#fileInput').click();
+
+        });
+
+        $('#showPrompt').click(async function() {
+            $('#editPromptModal').modal('show');
+            $('#promptEditContainer').empty();
+
+            promptsJSON = await fetchPrompts();
+            if (!promptsJSON || promptsJSON.length === 0) {
+                $('#addPrompt').click();
+            } else {
+                promptsJSON.forEach(prompt => {
+                    const inputField = $(`
+                        <div class="form-group">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="text" class="form-control" data-prompt-key="${prompt.key}" value="${prompt.title}" style="width: 500px; font-size: 12px;">
+                                <button type="button" class="btn btn-danger btn-sm remove-prompt" data-prompt-key="${prompt.key}"><small>Delete</small></button>
+                            </div>
+                            <br>
+                            <textarea class="form-control" data-prompt-key="${prompt.key}" rows="5" cols="40" style="font-size: 12px;">${prompt.content}</textarea>
+                        </div>
+                        <hr>
+                    `);
+                    $('#promptEditContainer').append(inputField);
+                });
+            }
+        });
+
+        $('#addPrompt').click(function() {
+            const promptKey = new Date().getTime();
+            const inputField = $(`
+                    <div class="form-group">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="text" class="form-control" data-prompt-key="${promptKey}" placeholder="Put the prompt title" style="width: 500px; font-size: 12px;">
+                            <button type="button" class="btn btn-danger btn-sm remove-prompt" data-prompt-key="${promptKey}"><small>Delete</small></button>
+                        </div>
+                        <br>
+                        <textarea class="form-control" rows="5" cols="40" style="font-size: 12px;" data-prompt-key="${promptKey}" placeholder="Put the prompt content"></textarea>
+                    </div>
+                    <hr>
+                    `);
+            $('#promptEditContainer').append(inputField);
+        });
+
+        $('#savePrompts').click(async function() {
+            let updatedPrompts = [];
+            
+            $('#promptEditContainer .form-group').each(function() {
+                let promptKey = $(this).find('input.form-control').data('prompt-key');
+                let title = $(this).find('input.form-control').val().trim();
+                let content = $(this).find('textarea.form-control').val().trim();
+                
+                if (promptKey && title && content) {
+                    updatedPrompts.push({'key': promptKey, 'title': title, 'content': content}); 
+                } else {
+                    alert('Please fill in all fields.');
+                    return;
+                }
+            });
+
+            try {
+                await updatePrompts(updatedPrompts);
+                $('#editPromptModal').modal('hide');
+            } catch (error) {
+                alert('Failed to save prompts. Please try again.');
+            }
+        });
+
+        $(document).on('click', '.remove-prompt', function() {
+            const promptKey = $(this).data('prompt-key');
+            $(this).closest('.form-group').remove();
+        });
+
+        $('#makeReport').click(async function() {
+            promptsJSON = await fetchPrompts();
+            if (!promptsJSON || promptsJSON.length === 0) {
+                alert('No prompts available.');
+                return;
+            }
+
+            $('#promptButtonContainer').empty();
+            let colorIndex = 0;
+            const btnColors = ['btn-primary', 'btn-success', 'btn-danger', 'btn-warning', 'btn-info', 'btn-light', 'btn-dark', 'btn-secondary'];
+
+            promptsJSON.forEach(prompt => {
+                const btnColor = btnColors[colorIndex];
+                colorIndex = (colorIndex + 1) % btnColors.length;
+                
+                const button = $(`
+                    <button type="button" 
+                            class="btn ${btnColor} m-1 select-prompt-button d-block w-full" 
+                            data-key="${prompt.key}">
+                        ${prompt.title}
+                    </button>
+                    <br>
+                `);
+                $('#promptButtonContainer').append(button);
+            });
+
+            $('#selectPromptModal').modal('show');
+        });
+
+        $('#filefindButton').click(function() {
+            if (relatedFiles.length > MaxNoFiles) {
+                alert(`You can no longer attach files. Maximum ${MaxNoFiles} files allowed.`);
+                return;
+            }
+            $('#fileSelectModal').modal('show');
+        });
+
+        $('#fileInput').change(function() {
+            const files = this.files;
+            if (files.length > 0) {
+                if (files[0].size > 52428800) { 
+                    alert("File size exceeds 50MB. Please upload a smaller file.");
+                    return;
+                }
+                const formData = new FormData();
+                formData.append('file', files[0]);
+                // formData.append('sessionId', projectId);
+                // formData.append('fileName', files[0].name); 
+                $.ajax({
+                    url: `/files/uploadFile`, 
+                    method: 'POST',
+                    data: formData,
+                    headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token']
+                    },
+                    processData: false,
+                    contentType: false,
+                    success: async function(response) {
+                        alert('File uploaded successfull and this will be added this to the related files');
+                        let UfileId = response.data._id;
+                        if (!relatedFiles.includes(UfileId)) {
+                            relatedFiles.push(UfileId);
+                            updateProjectData({ related_files: relatedFiles });
+                            fetchRelatedFiles(relatedFiles);
+                        } else {
+                            alert('File is already referenced.');
+                        }
+                        fileTable.ajax.reload(); 
+                    },
+                    error: function(xhr, error, thrown) {
+                        const errorMessage = xhr.responseJSON ? xhr.responseJSON.error : "An error occurred: " + thrown;
+                        alert("Error uploading file: " + errorMessage);
+                    }
+                });
+            }
+            $(this).val('');
+        });
+
+        $(document).on('click', '.text-extract-btn', async function() {
+            let messageId = Date.now();
+            const linkElement = $(this).siblings('h5').find('a');
+            const LLurl = linkElement.attr('href');
+            const title = linkElement.text();
+
+            appendChatMe(messageId, `Summary of "${title}"`);
+            const targetUrl = extractTargetUrl(LLurl);    
+            let extContent = await extractContent(targetUrl);
+            console.log(extContent);
+            let finalText = extractTextFromHTML(extContent);
+            finalText = finalText.replace(/\n/g, '');
+            let query = `Summarize this text with the primary language of the text: ${finalText}`;
+            let LLresp = await sendMessageToAI(query, projectId);
+            if (LLresp) {
+                $('#loadingOverlay').hide(); 
+                let md = window.markdownit();
+                let html_code = md.render(LLresp);
+                appendChatAI(messageId, html_code);
+
+                let Mcontents = $('#resultsContent').html();
+                try {
+                    updateProjectData({ contents: encodeURIComponent(Mcontents) });
+                } catch (error) {
+                    console.error('프로젝트 데이터 업데이트 중 오류 발생:', error);
+                }
+            } else {
+                alert('No response');
+            }
+
+        });
+
+        $(document).on('click', '.select-prompt-button', async function() {
+            const selectedKey = $(this).data('key');
+            const selectedPrompt = promptsJSON.find(p => p.key === selectedKey);
+            const contents = $('#resultsContent').html(); 
+            $('#selectPromptModal').modal('hide');
+        
+            $('#loadingOverlay').show();
+        
+            const query = `${selectedPrompt.content} ${contents}`;
+            const aiResponse = await sendMessageToAI(query, projectId);
+        
+            if (aiResponse) {
+                $('#loadingOverlay').hide();
+        
+                localStorage.setItem('summaryContent', aiResponse);
+        
+                window.open('/ffeditor', '_blank');
+            } else {
+                $('#resultsContent').append(`<div>No response</div>`);
+            }
+        
+        });
+
+        $(document).on('click', '.remove-file', async function() {
+            const confirmDelete = confirm("Do you want to remove file?");
+            if (confirmDelete) {
+                let fileId = $(this).closest('.d-flex').find('button').data('file-id');
+                $(this).closest('.d-flex').remove(); 
+                relatedFiles = relatedFiles.filter(id => id !== fileId);
+                updateProjectData({ related_files: relatedFiles });
+                alert('File removed successfully.');
+            } 
+
+        });
+
+        $(document).on('click', '.analyze-file', async function() {
+            const iconSpan = $(this);
+            const originalIcon = '⚫️';
+            const newIcon = '🔘';
+            let fileId = $(this).closest('.d-flex').find('button').data('file-id');
+
+            // 현재 파일의 RAG 상태 확인
+            const resp = await getFileDataById(fileId);
+            const data = resp.data;
+
+            if (!data.RAG) {
+                alert('This file has not been synchronized with Vector DB. Please click the filename to sync first.');
+                $('#fileDetailModal').modal('show');
+                return;
+            }
+
+            const otherActiveIcons = $('.analyze-file').filter(function() {
+                return $(this).text() === newIcon && $(this)[0] !== iconSpan[0];
+            });
+
+            if (iconSpan.text() === originalIcon) {
+                if (otherActiveIcons.length > 0) {
+                    alert('Another file is already in analysis mode. Please deactivate it first.');
+                    return;
+                }
+                
+                iconSpan.text(newIcon);
+                $('#searchQuery').val('');
+                $('#searchQuery').val(`[${fileId}] `);
+            } else {
+                iconSpan.text(originalIcon);
+                $('#searchQuery').val('');
+            }
+        });
+
+        $(document).on('click', '.remove-chat', function() {
+            const chatMessage = $(this).closest('.chatmessage');
+            const messageId = chatMessage.data('id');
+
+            // 이전 메시지를 찾기 위한 로직 추가
+            const previousMessage = chatMessage.prev('.chatmessage'); // 이전 메시지 찾기
+
+            // 두 메시지를 함께 삭제
+            chatMessage.remove(); 
+            previousMessage.remove(); // 이전 메시지 삭제
+            
+            let htmlCode = $('#resultsContent').html();
+            console.log(htmlCode);
+
+            //update Data
+            updateProjectData({ contents: encodeURIComponent(htmlCode) });
+        });
+
+        $(document).on('click', '#relatedfile button', async function() {
+            const resp = await getFileDataById($(this).data('file-id'));
+            console.log(resp);
+            const data = resp.data;
+            $('#modalFileName').text(data.file_name);
+            $('#fileID').text(data._id);
+            $('#modalTags').text(Array.isArray(data.tags) ? data.tags.join(', ') : data.tags);
+            $('#modalSummary').val(data.summary);
+            $('#modalFileLocation').attr('href', data.location);      
+            $('#modalComment').text(data.comments || "");
+            if (data.RAG) {
+                $('#storeInVectorDB').prop('disabled', true);
+                $('#storeInVectorDB').text('Completed to Sync');
+                $('#storeInVectorDB').removeClass('btn-danger').addClass('btn-secondary');
+            } else {
+                $('#storeInVectorDB').prop('disabled', false);
+                $('#storeInVectorDB').text('Sync to VectorDB');
+                $('#storeInVectorDB').removeClass('btn-secondary').addClass('btn-danger');
+            }
+
+            $('#fileDetailModal').modal('show');
+
+        });
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+    
+        function updateProjectData(data) {
+            $.ajax({
+                url: `/projects/updateProject/${projectId}`,
+                method: 'PUT',
+                headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token']
+                    },
+                contentType: 'application/json',
+                data: JSON.stringify(data), // data를 포함하여 요청
+                success: function(response) {
+                    console.log('Project updated successfully:', response);
+                },
+                error: function(xhr) {
+                    alert('Failed to update project.');
+                }
+            });
+        }
+
+        function appendChatMe(messageId, query) {
+            $('#resultsContent').append(`
+                <div class="chatmessage p-3" data-id="${messageId}">
+                    <div class="d-flex align-items-center">
+                        <div class="flex items-center justify-center h-10 w-10 bg-blue-500">
+                        Me
+                        </div>
+                        <div class="bg-white shadow rounded p-3 ms-3">
+                            <div class="fs-5">${query}</div>
+                        </div>
+                    </div>
+                </div>
+                `);
+        
+            $('#loadingOverlay').show();
+        }
+
+        function appendChatAI(messageId, info) {
+            let LastText = '';
+            const markdownRegex = /(^|\s)(#{1,6}\s|[-+*]\s|\*\*|\*|__|_|\`)/;
+            const htmlRegex = /<[^>]+>/;
+            if (htmlRegex.test(info)) {
+                LastText = info;
+            } else if (markdownRegex.test(info)) {
+                LastText = marked(info);
+            } else {
+                LastText = info;
+            }
+
+            $('#resultsContent').append(`
+                <div class="chatmessage p-3" data-id="${messageId}">
+                    <div class="d-flex align-items-center">
+                        <div class="flex items-center justify-center h-10 w-10 bg-purple-500">
+                        AI
+                        </div>
+                        <div class="bg-gray shadow rounded p-3 ms-3">
+                            <div class="fs-5">${LastText}</div>
+                            <span class="ml-2 text-red-500 cursor-pointer remove-chat" aria-label="Remove chat">x</span>
+                        </div>
+                    </div>
+                </div>
+                `);
+        }
+
+        function extractTextFromHTML(htmlContent) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent, 'text/html');
+            return doc.body.textContent || "";
+        }
+
+        function extractTargetUrl(LLurl) {
+            // 'RU=' 다음에 오는 부분을 추출
+            const ruIndex = LLurl.indexOf('/RU=');
+            if (ruIndex === -1) {
+                console.error("RU parameter not found in the URL.");
+                return null;
+            }
+        
+            // RU= 이후의 문자열을 추출
+            const start = ruIndex + 4; // '/RU='의 길이
+            const end = LLurl.indexOf('/RK=', start);
+            const encodedTargetUrl = end !== -1 ? LLurl.substring(start, end) : LLurl.substring(start);
+        
+            try {
+                // 디코딩하여 실제 URL 반환
+                return decodeURIComponent(encodedTargetUrl);
+            } catch (error) {
+                console.error("Error decoding the target URL:", error);
+                return null;
+            }
+        }
+
+        async function fetchRelatedFiles(relatedFiles) {
+            $('#relatedfile').empty();
+            for (const fileId of relatedFiles) {
+                try {
+                    const fileResponse = await $.ajax({
+                        url: `/files/getFile/${fileId}`,
+                        method: 'GET',
+                        headers: {
+                            'Authorization': 'Bearer ' + FFsession['session_token']
+                        },
+                    });
+                    console.log(fileResponse);
+        
+                    if (fileResponse && fileResponse.data && fileResponse.data.file_name) {
+                        const fileName = fileResponse.data.file_name;
+                        var button = $(`
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-danger ms-2 cursor-pointer remove-file" aria-label="Remove file"><small>❌</small></span>
+                                            <span class="text-primary ms-2 cursor-pointer analyze-file" aria-label="toggle">⚫️</span>
+                                            <button class="btn btn-sm" data-file-id="${fileId}" data-file-name="${fileName}">
+                                                <div>
+                                                    <small class="text-yellow-300" title="${fileName}">${truncateText(fileName, 23)}</small>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    `);
+                        $('#relatedfile').append(button);
+                    } else {
+                        console.error('파일 이름을 찾을 수 없습니다:', fileResponse);
+                    }
+                } catch (xhr) {
+                    console.error('파일을 찾을 수 없습니다:', xhr);
+                    const confirmDelete = confirm('File not found. Would you like to remove it from the list?');
+                    
+                    if (confirmDelete) {
+                        // 관련 파일 목록에서 해당 파일 ID를 삭제하는 로직 추가
+                        relatedFiles = relatedFiles.filter(id => id !== fileId); // fileId를 제외한 새로운 배열 생성
+                        updateProjectData({ related_files: relatedFiles }); // 업데이트된 관련 파일 목록을 서버에 전송
+                        fetchRelatedFiles(relatedFiles); // 관련 파일 목록을 다시 가져오기
+                    }
+                }
+            }
+        }
+
+        async function fetchPrompts() {
+            try {
+                const response = await $.ajax({
+                    url: '/settings/getPrompts',
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + FFsession['session_token']
+                    }
+                });
+                return response.data;
+            } catch (error) {
+                console.log('프롬프트 가져오기 실패:', error);
+                return null;
+            }
+        }
+
+        async function updatePrompts(promptsJSON) {
+            try {
+                const response = await $.ajax({
+                    url: '/settings/updatePrompts',
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + FFsession['session_token']
+                    },
+                    contentType: 'application/json',
+                    data: JSON.stringify(promptsJSON)
+                });
+                
+                if (response.status === 'success') {
+                    alert('Prompts updated successfully.');
+                    $('#editPromptModal').modal('hide');
+                } else {
+                    throw new Error(response.message || 'Update failed');
+                }
+            } catch (error) {
+                console.error('프롬프트 업데이트 중 오류:', error);
+                alert('Failed to update prompts.');
+            }
+        }
+
+        async function getFileDataById(fileId) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: `/files/getFile/${fileId}`, // 파일 정보를 가져오는 API 엔드포인트
+                    method: 'GET',
+                    headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token']
+                    },
+                    success: function(response) {
+                        resolve(response); // 성공 시 응답 반환
+                    },
+                    error: function(xhr) {
+                        const errorMessage = xhr.responseText ? JSON.parse(xhr.responseText).error : xhr.statusText;
+                        console.error(`파일 데이터 가져오기 실패: ${errorMessage}`);
+                        reject(`파일 데이터 가져오기 실패: ${errorMessage}`);
+                    }
+                });
+            });
+        }
+
+        $('#storeInVectorDB').click(async function() {
+          try {
+              const fileId = $('#fileID').text();
+
+              if (!fileId) {
+                  alert('No file selected');
+                  return;
+              }
+
+              $('#loadingOverlay').show();
+              
+              const response = await fetch(`/files/storeInVectorDB/${fileId}`, {
+                  method: 'GET',
+                  headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token'],
+                      'Content-Type': 'application/json'
+                  }
+              });
+
+              const data = await response.json();
+
+              if (data.status === 'success') {
+                $('#storeInVectorDB').text('Completed to Sync');
+                $('#storeInVectorDB').removeClass('btn-danger').addClass('btn-secondary');
+                alert('Successfully stored in vector database');
+              } else {
+                throw new Error(data.message || 'Failed to store in vector database');
+              }
+          } catch (error) {
+              console.error('Error storing in vector DB:', error);
+              alert('Failed to store in vector database: ' + error.message);
+          } finally {
+              $('#loadingOverlay').hide();
+          }
+
+        });
+
+    });
+    </script>
+</body>
+
+</html>

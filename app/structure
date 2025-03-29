@@ -1,0 +1,21 @@
+app/
+├── __init__.py
+├── config/
+│   └── config.py
+├── models/
+│   └── __init__.py
+├── routes/
+│   ├── __init__.py
+│   ├── auth.py
+│   ├── user.py
+│   ├── file.py
+│   ├── project.py
+│   └── company.py
+├── services/
+│   ├── __init__.py
+│   ├── s3_service.py
+│   ├── vector_service.py
+│   └── email_service.py
+└── utils/
+    ├── __init__.py
+    └── decorators.py

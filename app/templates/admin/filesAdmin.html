@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>FileFlicker</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+    <link href="http://code.ionicframework.com/ionicons/2.0.0/css/ionicons.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css" />
+    <link href="/static/css/AdminLTE.min.css" rel="stylesheet" type="text/css" />
+    <link href="/static/css/skins/_all-skins.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+      .label-width {
+        width: 80px; /* 원하는 너비로 조정 */
+        display: inline-block; /* 레이블을 블록으로 설정하여 너비 적용 */
+      }
+      .dataTable {
+        font-size: 12px; /* 원하는 글씨 크기로 조정 */
+      }
+    </style>
+  </head>
+  <body class="skin-blue">
+    <div class="wrapper">
+      
+      <header class="main-header">
+        <a href="/projectsAdmin" class="logo"><b>Admin</b>FileFlicker</a>
+        <nav class="navbar navbar-static-top" role="navigation">
+
+          <div class="navbar-custom-menu">
+            <ul class="nav navbar-nav">
+              <li class="dropdown user user-menu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                  <img src="/static/img/user2-160x160.jpg" class="user-image" alt="User Image"/>
+                  <span class="hidden-xs" id="profileName1">Francis Han</span>
+                </a>
+                <ul class="dropdown-menu">
+                  <li class="user-header">
+                    <img src="/static/img/user2-160x160.jpg" class="img-circle" alt="User Image" />
+                    <p>
+                      <span id="profileName2"></span> - <span id="profileRole"></span>
+                      <small id="profilecreatedAt"></small>
+                    </p>
+                  </li>
+
+                  <li class="user-footer">
+                    <div class="pull-left">
+                      <a href="#" class="btn btn-default btn-flat" id="myProfileBtn">Profile</a>
+                    </div>
+                    <div class="pull-right">
+                      <a href="#" class="btn btn-default btn-flat" id="signOutBtn">Sign out</a>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </header>
+
+      <aside class="main-sidebar">
+        <section class="sidebar">
+          <ul class="sidebar-menu">
+            <li class="header">MAIN</li>
+            <li>
+              <a href="/projectsAdmin">
+                <i class="fa fa-folder"></i> <span> Projects</span> 
+              </a>
+            </li>
+            <li>
+              <a href="/companiesAdmin">
+                <i class="fa fa-building"></i> <span> Companies</span> 
+              </a>
+            </li>
+            <li class="active">
+              <a href="/filesAdmin">
+                <i class="fa fa-file"></i> <span> Files</span> 
+              </a>
+            </li>
+            <li>
+              <a href="/usersAdmin">
+                <i class="fa fa-users"></i> <span> Users</span> 
+              </a>
+            </li>
+            <li>
+              <a href="/settingAdmin">
+                <i class="fa fa-asterisk"></i> <span> Settings</span> 
+              </a>
+            </li>
+          </ul>
+        </section>
+      </aside>
+
+      <div class="content-wrapper">
+        <section class="content-header">
+          <h1 style="display: inline-block;">Files</h1>
+          <ol class="breadcrumb">
+            <li><a href="/"><i class="fa fa-dashboard"></i> Home</a></li>
+            <li class="active">Files</li>
+          </ol>
+        </section>
+
+        <section class="content">
+          <div class="row">
+            <div class="col-xs-12">
+              <div class="box">
+                <div class="box-header">
+                  <h3 class="box-title">Data Table</h3>
+                </div>
+                <div class="box-body">
+                  <table id="fileTable" class="table table-bordered table-hover">
+                    <thead>
+                      <tr>
+                      </tr>
+                    </thead>
+
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+      </div>
+      <footer class="main-footer">
+        <strong>Copyright &copy; 2025 Ylem Invest.</strong> All rights reserved.
+      </footer>
+    </div>
+
+    <div class="modal fade" id="fileDetailModal" tabindex="-1" role="dialog" aria-labelledby="fileDetailModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title"><span id="modalFileName">File Details</span>&nbsp;&nbsp; <small><button id="deleteFile_btn" class="btn btn-danger btn-sm">Delete</button></small></h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                  </button>
+              </div>
+              <div class="modal-body">
+                  <h6 hidden>ID:</h6>
+                  <p id="fileID" hidden></p>
+                  <h6>Summary: &nbsp;<small><button id="AISummaryBtn" class="btn btn-sm btn-secondary">AI Summary</button></small></h6>
+                  <textarea id="modalSummary" rows="15" style="font-size: 12px; width: 100%;"></textarea>
+                  <hr>
+                  <h6>File Location: &nbsp;<small><button id="downloadFileBtn" class="btn btn-sm btn-warning">Download</button></small></h6>
+                  <p>
+                      <strong id="modalFileLocation"></strong>
+                  </p>
+                  <hr>
+                  <h6>Tags:</h6>
+                  <textarea id="modalTags" style="font-size: 12px; width: 100%; height: 50px;"></textarea>
+                  <hr>
+                  <h6>Comment:</h6>
+                  <textarea id="modalComment" style="font-size: 12px; width: 100%; height: 50px;"></textarea>
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              </div>
+          </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.3.2/markdown-it.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <script src="/static/js/basic.js"></script>
+    <script src="/static/js/ai_tools.js"></script>
+    <script>
+      let pLength = 25;
+      let fileTable;
+  
+      $(document).ready(async function() {
+        const FFsession = getSessionFromMemory();
+        console.log(FFsession);
+        let resp = await getUser(FFsession['user_id'], FFsession['session_token']);
+        if (resp && resp.status == 'success') {
+          profileDataMapping(resp.data);
+        } else {
+          alert('No profile');
+        }
+        
+        fileTable = $('#fileTable').DataTable({
+            responsive: true,
+            lengthChange: true,
+            info: false,
+            scrollY: true,
+            paging: true,
+            serverSide: true,
+            order: [[0, 'asc']],
+            ajax: {
+                url: '/files',
+                dataSrc: 'data',
+                beforeSend: function(xhr) {
+                  xhr.setRequestHeader("Authorization", "Bearer " + FFsession['session_token']);
+                }
+            },
+            columns: [
+                { data: '_id', title: 'File ID', visible: false }, 
+                { data: 'file_name', title: 'File Name', render: function(data) { return truncateText(data, 30); } },
+                { data: 'tags', title: 'Tags', render: function(data) { 
+                        if (Array.isArray(data)) {
+                            return truncateText(data.join(', '), 15); 
+                        } else if (typeof data === 'string') {
+                            return truncateText(data.split(',').map(tag => tag.trim()), 15);
+                        }
+                        return "..."; 
+                    } 
+                },
+                { data: 'summary', title: 'Summary', render: function(data) { return truncateText(data, 50); } },
+                { data: 'owner', title: 'Owner'},
+            ],
+            pageLength: pLength,
+            initComplete: function() {
+
+            },
+        });
+
+        $('#AISummaryBtn').click(async function() {
+            const confirmAnalyze = confirm("Really do you want to summarize this file?");
+            const MaxLength = 100000;
+            if (!confirmAnalyze) return;
+
+            let textContent = '';
+            const fileId = $('#fileID').text();
+            const fileName = $('#modalFileName').text();
+            const fileExtension = fileName.split('.').pop().toLowerCase();
+
+            const responseData = await downloadFile(fileId, fileName, "pass");
+            const fileUrl = responseData.url; 
+
+            const response = await fetch(fileUrl);
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert(`Error fetching file: ${errorData.error}`);
+                return;
+            }
+            const blob = await response.blob(); 
+            const arrayBuffer = await blob.arrayBuffer(); 
+
+            if (fileExtension === 'pdf') {
+                try {
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const content = await page.getTextContent();
+                        const textItems = content.items.map(item => item.str);
+                        textContent += textItems.join(' ') + '\n'; 
+                    }
+
+                } catch (error) {
+                    alert(`Error: ${error.message}`);
+                    console.error(error); 
+                }
+            } else if (fileExtension === 'doc' || fileExtension === 'docx') {
+                try {
+                    mammoth.extractRawText({ arrayBuffer: arrayBuffer })
+                        .then(function(result) {
+                            textContent = result.value;
+
+                        })
+                        .catch(function(err) {
+                            alert(`Error extracting text: ${err.message}`);
+                        });
+
+                } catch (error) {
+                    alert(`Error: ${error.message}`); // 에러 메시지 출력
+                    console.error(error); // 콘솔에 에러 출력
+                }
+            } else {
+                alert('처리못함');
+            }
+            if(textContent.length > MaxLength) {
+                textContent = textContent.slice(0, MaxLength);
+            }
+            let Resp = await AISearch(`summarize this with the primary language of the text: ${textContent}`);
+            $('#modalSummary').val(Resp);
+        });
+
+        $('#fileDetailModal').on('click', '[data-dismiss="modal"]', function() {
+            // 모달 내 모든 입력 박스 비우기
+            $('#modalSummary').val('');
+            $('#modalTags').val('');
+            $('#modalComment').val('');
+        });
+
+        $('#fileTable tbody').on('click', 'tr', function () {
+            const data = fileTable.row(this).data();
+            $('#modalFileName').text(data.file_name);
+            $('#fileID').text(data._id);
+            $('#modalTags').text(Array.isArray(data.tags) ? data.tags.join(', ') : data.tags);
+            $('#modalSummary').val(data.summary);
+
+            const locationText = data.location.length > 20 ? data.location.substring(0, 40) + '...' : data.location;
+            $('#modalFileLocation').attr('href', data.location);      
+
+            // 댓글 내용 설정
+            $('#modalComment').text(data.comments || ""); // 기존 댓글이 있으면 표시
+
+            $('#fileDetailModal').modal('show');
+        });
+        
+        $('#downloadFileBtn').click(async function() {
+            const fileId = $('#fileID').text();
+            const fileName = $('#modalFileName').text();
+            await downloadFile(fileId, fileName, "download");
+        });
+    
+        $('#fileDetailModal').on('click', '#deleteFile_btn', function() {
+            const fileId = $('#fileID').text();  
+            if (confirm("정말로 이 파일을 삭제하시겠습니까?")) {
+                $.ajax({
+                    url: `/removeFile/${fileId}`,
+                    method: 'DELETE',
+                    headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token']
+                    },
+                    success: function(response) {
+                        alert('파일이 성공적으로 삭제되었습니다.');
+                        fileTable.ajax.reload(); 
+                        $('#modalSummary').val('');
+                        $('#modalTags').val('');
+                        $('#modalComment').val('');
+                        $('#fileDetailModal').modal('hide'); 
+                    },
+                    error: function(xhr, error, thrown) {
+                        alert("파일 삭제 실패: " + (xhr.responseJSON ? xhr.responseJSON.error : thrown));
+                    }
+                });
+            }
+        });
+
+        $('#updateFile_btn').click(async function() {   
+            const fileId = $('#fileID').text();
+            const summary = $('#modalSummary').val(); 
+            const tags = $('#modalTags').val(); 
+            const comments = $('#modalComment').val(); 
+
+            try {
+                await $.ajax({
+                    url: `/updateFile/${fileId}`,
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token']
+                    },
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        summary: summary,
+                        tags: tags,
+                        comments: comments
+                    }),
+                    success: function(response) {
+                        $('#modalSummary').val(''); 
+                        $('#modalTags').val(''); 
+                        $('#modalComment').val(''); 
+                        $('#fileDetailModal').modal('hide');
+                        fileTable.ajax.reload();
+                        console.log('파일 정보가 성공적으로 저장되었습니다.');
+                    },
+                    error: function(xhr) {
+                        const errorMessage = xhr.responseJSON ? xhr.responseJSON.error : '알 수 없는 오류 발생';
+                        alert(`Error: ${errorMessage}`);
+                    }
+                });
+            } catch (error) {
+                console.error('서버에 저장 중 오류 발생:', error);
+            }
+        });
+
+  });
+        
+  </script>
+
+  </body>
+</html>

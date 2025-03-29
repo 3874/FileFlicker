@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>FileFlicker</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+    <link href="http://code.ionicframework.com/ionicons/2.0.0/css/ionicons.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css" />
+    <link href="/static/css/AdminLTE.min.css" rel="stylesheet" type="text/css" />
+    <link href="/static/css/skins/_all-skins.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+      .label-width {
+        width: 80px; /* 원하는 너비로 조정 */
+        display: inline-block; /* 레이블을 블록으로 설정하여 너비 적용 */
+      }
+      .dataTable {
+        font-size: 12px; /* 원하는 글씨 크기로 조정 */
+      }
+    </style>
+  </head>
+  <body class="skin-blue">
+    <div class="wrapper">
+      
+      <header class="main-header">
+        <a href="/projectsAdmin" class="logo"><b>Admin</b>FileFlicker</a>
+        <nav class="navbar navbar-static-top" role="navigation">
+
+          <div class="navbar-custom-menu">
+            <ul class="nav navbar-nav">
+              <li class="dropdown user user-menu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                  <img src="/static/img/user2-160x160.jpg" class="user-image" alt="User Image"/>
+                  <span class="hidden-xs" id="profileName1">Francis Han</span>
+                </a>
+                <ul class="dropdown-menu">
+                  <li class="user-header">
+                    <img src="/static/img/user2-160x160.jpg" class="img-circle" alt="User Image" />
+                    <p>
+                      <span id="profileName2"></span> - <span id="profileRole"></span>
+                      <small id="profilecreatedAt"></small>
+                    </p>
+                  </li>
+
+                  <li class="user-footer">
+                    <div class="pull-left">
+                      <a href="#" class="btn btn-default btn-flat" id="myProfileBtn">Profile</a>
+                    </div>
+                    <div class="pull-right">
+                      <a href="#" class="btn btn-default btn-flat" id="signOutBtn">Sign out</a>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </header>
+
+      <aside class="main-sidebar">
+        <section class="sidebar">
+          <ul class="sidebar-menu">
+            <li class="header">MAIN</li>
+            <li>
+              <a href="/projectsAdmin">
+                <i class="fa fa-folder"></i> <span> Projects</span> 
+              </a>
+            </li>
+            <li>
+              <a href="/companiesAdmin">
+                <i class="fa fa-building"></i> <span> Companies</span> 
+              </a>
+            </li>
+            <li>
+              <a href="/filesAdmin">
+                <i class="fa fa-file"></i> <span> Files</span> 
+              </a>
+            </li>
+            <li>
+              <a href="/usersAdmin">
+                <i class="fa fa-users"></i> <span> Users</span> 
+              </a>
+            </li>
+            <li class="active">
+              <a href="/settingAdmin">
+                <i class="fa fa-asterisk"></i> <span> Settings</span> 
+              </a>
+            </li>
+          </ul>
+        </section>
+      </aside>
+
+      <div class="content-wrapper">
+        <section class="content-header">
+          <h1 style="display: inline-block;">Settings</h1>
+          <ol class="breadcrumb">
+            <li><a href="/"><i class="fa fa-dashboard"></i> Home</a></li>
+            <li class="active">Settings</li>
+          </ol>
+        </section>
+
+        <section class="content">
+            <div class="card p-4" style="width: 400px; margin: 0 auto;">
+                <div id="dataPlate">
+                    
+                </div>
+    
+                <div class="text-center mt-4">
+                    <button class="btn btn-info" id="SaveBtn">Save</button>
+                </div>
+            </div>
+        </section>
+      </div>
+      <footer class="main-footer">
+        <strong>Copyright &copy; 2025 Ylem Invest.</strong> All rights reserved.
+      </footer>
+    </div>
+
+</body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script src="/static/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="/static/js/basic.js"></script>
+<script src="/static/js/ai_tools.js"></script>
+<script>
+    $(document).ready(async function() {
+      const FFsession = getSessionFromMemory();
+      let resp = await getUser(FFsession['user_id'], FFsession['session_token']);
+      if (resp && resp.status == 'success') {
+        profileDataMapping(resp.data);
+      } else {
+        alert('No profile');
+      }
+
+        $.ajax({
+            url: '/getSettings',
+            type: 'GET',
+            headers: {
+                      'Authorization': 'Bearer ' + FFsession['session_token']
+                  },
+            success: function(response) {
+                if (response.success) {
+                    // 동적으로 입력 필드 생성
+                    const dataPlate = $('#dataPlate');
+                    dataPlate.empty(); // 기존 내용을 비움
+                    
+                    // 가져온 설정 값을 기반으로 입력 필드 생성
+                    for (const key in response.data) {
+                        if (response.data.hasOwnProperty(key)) {
+                            const label = $('<label>').attr('for', key).text(key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ':');
+                            const input = $('<input>').attr({
+                                type: 'text',
+                                class: 'form-control',
+                                id: key,
+                                placeholder: `Enter ${key.replace(/_/g, ' ')}`,
+                                value: response.data[key]
+                            });
+                            const formGroup = $('<div>').addClass('form-group').append(label).append(input);
+                            dataPlate.append(formGroup);
+                        }
+                    }
+                } else {
+                    alert('Failed to load settings.');
+                }
+            },
+            error: function(xhr, error, code) {
+              $('#signOutBtn').click();
+            }
+        });
+
+        $('#SaveBtn').click(function() {
+            const settings = {};
+            $('#dataPlate input[type="text"]').each(function() {
+                settings[this.id] = $(this).val();
+            });
+
+            $.ajax({
+                url: '/saveSettings',
+                type: 'POST',
+                headers: {
+                        'Authorization': 'Bearer ' + FFsession['session_token']
+                    },
+                contentType: 'application/json',
+                data: JSON.stringify(settings),
+                success: function(response) {
+                    alert('Settings saved successfully!');
+                    window.location.href = '/projectsAdmin';
+                },
+                error: function(error) {
+                    alert('Error saving settings.');
+                }
+            });
+        });
+    });
+</script>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>FileFlicker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+      body {
+        background-color: #f4f6f9;
+      }
+      .register-box {
+        width: 360px;
+        margin: 7% auto;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #fff;
+      }
+      .register-logo a {
+        font-size: 24px;
+        color: #333;
+      }
+      .form-control-feedback {
+        color: #999;
+      }
+      .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+      }
+      .social-auth-links a {
+        color: #fff;
+      }
+    </style>
+
+  </head>
+  <body class="register-page">
+    <div class="register-box">
+      <div class="register-logo">
+        <a href="/"><b>File</b>Flicker</a>
+      </div>
+
+      <div class="register-box-body">
+        <p class="login-box-msg">Sign-Up Form</p>
+        <form action="/" method="post" id="signupForm">
+          <div class="form-group has-feedback">
+            <input type="email" id="id" class="form-control" placeholder="Email"/>
+            
+          </div>
+          <div class="form-group has-feedback">
+            <input type="password" id="password" class="form-control" placeholder="Password"/>
+            
+          </div>
+          <div class="form-group has-feedback">
+            <input type="password" id="confirmPassword" class="form-control" placeholder="Retype password"/>
+            
+          </div>
+          <div class="button-container">
+              <button type="submit" class="btn btn-primary btn-block btn-flat">Sign Up</button>
+          </div>
+        </form>        
+        <br>
+        <a href="/signin" class="text-center">I already have a membership</a>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+
+            $('#signupForm').on('submit', function(event) {
+                event.preventDefault();
+
+                const id = $('#id').val();
+                const password = $('#password').val();
+                const confirmPassword = $('#confirmPassword').val();
+                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+                if (!emailPattern.test(id)) {
+                    alert('Please enter a valid email address.');
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    alert('Passwords do not match. Please re-enter.');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/addUser',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ ID: id, password: password }),
+                    success: function(data) {
+                        alert('User added successfully: ' + data.message);
+                        window.location.href = '/signin'; 
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('Error adding user:', errorThrown);
+                        alert('Failed to create account. Please try again.');
+                    }
+                });
+            });
+        });
+    </script>
+  </body>
+</html>

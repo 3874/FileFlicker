@@ -43,7 +43,6 @@
       $(document).ready(function() {
         const FFsession = getSessionFromMemory();
         const summaryContent = localStorage.getItem('summaryContent');
-        let content = marked.parse(summaryContent);
 
         var simplemde = new SimpleMDE({ 
             element: document.getElementById("editor"),
@@ -60,8 +59,10 @@
             ]
         });
 
+        let parseData = parseContent(summaryContent);
+
         if (summaryContent) {
-          simplemde.value(summaryContent); 
+          simplemde.value(parseData); 
         }
 
         $('#saveBtn').click(function() {
@@ -94,11 +95,11 @@
 
         $('#shareBtn').click(async function() {
             let markdownContent = simplemde.value();
-            let content = marked.parse(markdownContent);
+            let content = JSON.stringify(markdownContent);
             let recipientEmail = prompt("Input the recipient email:", "example@example.com");
 
             await $.ajax({
-                url: '/shareHTML', 
+                url: '/files/shareHTML', 
                 method: 'POST',
                 contentType: 'application/json',
                 headers: {
@@ -115,6 +116,52 @@
             });
         });
 
+        function parseContent(summaryContent) {
+            if (!summaryContent) return '';
+            
+            try {
+                // Try to parse as JSON
+                const content = typeof summaryContent === 'string' ? JSON.parse(summaryContent) : summaryContent;
+                
+                // If content is not an object after parsing, return the original content
+                if (typeof content !== 'object' || content === null) {
+                    return summaryContent;
+                }
+                
+                let parsedContent = '';
+                
+                // Process JSON content
+                for (const [section, sectionContent] of Object.entries(content)) {
+                    const sectionTitle = section
+                        .split('_')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ');
+                    
+                    parsedContent += `## ${sectionTitle}\n\n`;
+                    
+                    if (typeof sectionContent === 'object' && sectionContent !== null) {
+                        for (const [key, value] of Object.entries(sectionContent)) {
+                            if (value && value.trim() !== '') {
+                                const formattedKey = key
+                                    .split('_')
+                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                    .join(' ');
+                                
+                                parsedContent += `### ${formattedKey}\n\n${value}\n\n`;
+                            }
+                        }
+                    } else if (sectionContent && typeof sectionContent === 'string') {
+                        parsedContent += `${sectionContent}\n\n`;
+                    }
+                }
+                
+                return parsedContent;
+            } catch (error) {
+                // If JSON parsing fails, return the original content
+                console.log('Not a JSON format, returning original content');
+                return summaryContent;
+            }
+        }
     });
 
 </script>

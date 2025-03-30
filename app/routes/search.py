@@ -1,4 +1,4 @@
-import bcrypt, requests
+import bcrypt, requests, logging
 from flask import current_app
 from flask import Blueprint, request, jsonify, render_template, session
 from bson import ObjectId

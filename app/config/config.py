@@ -34,3 +34,7 @@ class Config:
 
     # N8N configuration
     N8N_URL = config.get('n8n_URL')
+
+    SENDER_EMAIL = config.get('SENDER_EMAIL')
+    SENDER_PWD = config.get('SENDER_PWD')
+    QDRANT_URL = config.get('QDRANT_URL')

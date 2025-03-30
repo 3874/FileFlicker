@@ -8,9 +8,10 @@
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
     <link href="http://code.ionicframework.com/ionicons/2.0.0/css/ionicons.min.css" rel="stylesheet" type="text/css" />
     <link href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.css" rel="stylesheet">
     <link href="/static/css/AdminLTE.min.css" rel="stylesheet" type="text/css" />
     <link href="/static/css/skins/_all-skins.min.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
 
     <style>
       #loadingOverlay {
@@ -32,6 +33,7 @@
       .dataTable {
         font-size: 12px; /* 원하는 글씨 크기로 조정 */
       }
+
     </style>
   </head>
   <body class="skin-blue">
@@ -161,6 +163,9 @@
                     <hr>
                     <h6>Comment:</h6>
                     <textarea id="modalComment" style="font-size: 12px; width: 100%;" rows="10"></textarea>
+                    <hr>
+                    <h6>Files: </h6>
+                    <textarea id="modalFiles" style="font-size: 12px; width: 100%;" rows="10"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button id="addCompanyBtn" class="btn btn-danger">Add</button>
@@ -174,296 +179,307 @@
     <div id="loadingOverlay" style="display: none;">
       <i class="fa fa-refresh fa-spin fa-2x"></i>
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="/static/js/basic.js"></script>
+    <script src="/static/js/ai_tools.js"></script>
     
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
-<script src="/static/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-<script src="/static/js/basic.js"></script>
-<script src="/static/js/ai_tools.js"></script>
-<script>
-    let pLength = 25;
-    let companyTable;
+    <script>
+        let pLength = 25;
+        let companyTable;
 
-    $(document).ready(async function() {
-      const FFsession = getSessionFromMemory();
-      let resp = await getUser(FFsession['user_id'], FFsession['session_token']);
-      if (resp && resp.status == 'success') {
-        ProfileModal();
-        profileDataMapping(resp.data);
-      } else {
-        alert('No profile');
-      }
+        $(document).ready(async function() {
+          const FFsession = getSessionFromMemory();
+          let resp = await getUser(FFsession['user_id'], FFsession['session_token']);
+          if (resp && resp.status == 'success') {
+            ProfileModal();
+            profileDataMapping(resp.data);
+          } else {
+            alert('No profile');
+          }
 
-        companyTable = $('#companyTable').DataTable({
-            responsive: true,
-            lengthChange: true,
-            info: false,
-            scrollY: true,
-            paging: true,
-            order: [[0, 'asc']],
-            serverSide: true,
-            ajax: {
-                url: '/companies',
-                dataSrc: 'data',
-                beforeSend: function(xhr) {
-                  xhr.setRequestHeader("Authorization", "Bearer " + FFsession['session_token']);
-                }
-            },
-            columns: [
-                { data: '_id', title: 'ID', visible: false }, 
-                { data: 'companyName', title: 'Name', render: function(data) { return truncateText(data, 30); } },
-                { data: 'companyEnName', title: 'Eng. Name', render: function(data) { return truncateText(data, 30); } },
-                { data: 'industry', title: 'Industry', render: function(data) { return truncateText(data, 30); } },
-                { data: 'summary', title: 'Summary', render: function(data) { return truncateText(data, 50); } },
-                { data: 'comment', title: 'Comment', render: function(data) { return truncateText(data, 50); } },
-            ],
-            pageLength: pLength,
-            initComplete: function() {
+            companyTable = $('#companyTable').DataTable({
+                responsive: true,
+                lengthChange: true,
+                info: false,
+                scrollY: true,
+                paging: true,
+                order: [[0, 'asc']],
+                serverSide: true,
+                ajax: {
+                    url: '/companies',
+                    dataSrc: 'data',
+                    beforeSend: function(xhr) {
+                      xhr.setRequestHeader("Authorization", "Bearer " + FFsession['session_token']);
+                    }
+                },
+                columns: [
+                    { data: '_id', title: 'ID', visible: false }, 
+                    { data: 'companyName', title: 'Name', render: function(data) { return truncateText(data, 30); } },
+                    { data: 'companyEnName', title: 'Eng. Name', render: function(data) { return truncateText(data, 30); } },
+                    { data: 'industry', title: 'Industry', render: function(data) { return truncateText(data, 30); } },
+                    { data: 'summary', title: 'Summary', render: function(data) { return truncateText(data, 50); } },
+                    { data: 'comment', title: 'Comment', render: function(data) { return truncateText(data, 50); } },
+                ],
+                pageLength: pLength,
+                initComplete: function() {
 
-            },
-        });
+                },
+            });
 
-        $('#SearchBtn').click(async function() {
-          let comEName = $('#modalCompanyEnName').val();
-          let comInd = $('#modalIndustry').val();
-          let comSum = $('#modalSummary').val();
-          let companyName = $('#modalCompanyName').val();
-          let query = `After looking for the information and news about ${companyName} ${comEName} ${comInd} ${comSum}, summarize these in the primary language`;
-          
-          $('#loadingOverlay').show();
-                
-          try {
-              const response = await $.ajax({
-                  url: '/search/WebSearch',
+            $('#SearchBtn').click(async function() {
+              let comEName = $('#modalCompanyEnName').val();
+              let comInd = $('#modalIndustry').val();
+              let comSum = $('#modalSummary').val();
+              let companyName = $('#modalCompanyName').val();
+              let query = `After looking for the information and news about ${companyName} ${comEName} ${comInd} ${comSum}, summarize these in the primary language`;
+              
+              $('#loadingOverlay').show();
+                    
+              try {
+                  const response = await $.ajax({
+                      url: '/search/WebSearch',
+                      method: 'POST',
+                      contentType: 'application/json',
+                      data: JSON.stringify([{
+                          sessionId: '11111111',
+                          action: 'sendMessage',
+                          chatInput: query,
+                      }]),
+                      timeout: 40000 
+                  });
+                  console.log(response);
+                  const currentSummary = $('#modalSummary').val();
+                  const newSummary = response + "\n=== 기존 내용 ===\n" + currentSummary;
+                  $('#modalSummary').val(newSummary);
+              } catch (xhr) {
+                  if (xhr.statusText === 'timeout') {
+                      alert('Time Out');
+                  } else {
+                      const errorMessage = xhr.responseJSON ? xhr.responseJSON.error : '알 수 없는 오류 발생';
+                      alert(errorMessage);
+                  }
+              } finally {
+                  $('#loadingOverlay').hide();
+              }
+
+            });
+
+            $('#shareBtn').click(function() {
+              let comName = $('#modalCompanyName').val();
+              let comEName = $('#modalCompanyEnName').val();
+              let comInd = $('#modalIndustry').val();
+              let comSum = $('#modalSummary').val();
+              let comCom = $('#modalComment').val();
+
+              const jsonString = `{
+                  "companyName": ${comName},
+                  "companyEnName": ${comEName}, 
+                  "industry": ${JSON.stringify(comInd)},
+                  "summary": ${JSON.stringify(comSum)},
+                  "comment": ${JSON.stringify(comCom)}
+              }`;
+
+              const recipientEmail = prompt("Input the recipient email:", "example@example.com");
+
+              $.ajax({
+                  url: '/files/shareJson', 
                   method: 'POST',
                   contentType: 'application/json',
-                  data: JSON.stringify([{
-                      sessionId: '11111111',
-                      action: 'sendMessage',
-                      chatInput: query,
-                  }]),
-                  timeout: 40000 
-              });
-              console.log(response);
-              const currentSummary = $('#modalSummary').val();
-              const newSummary = response + "\n=== 기존 내용 ===\n" + currentSummary;
-              $('#modalSummary').val(newSummary);
-          } catch (xhr) {
-              if (xhr.statusText === 'timeout') {
-                  alert('Time Out');
-              } else {
-                  const errorMessage = xhr.responseJSON ? xhr.responseJSON.error : '알 수 없는 오류 발생';
-                  alert(errorMessage);
-              }
-          } finally {
-              $('#loadingOverlay').hide();
-          }
-
-        });
-
-        $('#shareBtn').click(function() {
-          let comName = $('#modalCompanyName').val();
-          let comEName = $('#modalCompanyEnName').val();
-          let comInd = $('#modalIndustry').val();
-          let comSum = $('#modalSummary').val();
-          let comCom = $('#modalComment').val();
-
-          const jsonString = `{
-              "companyName": "${comName}",
-              "companyEnName": "${comEName}", 
-              "industry": "${comInd}",
-              "summary": "${comSum}",
-              "comment": "${comCom}"
-          }`;
-
-          const recipientEmail = prompt("Input the recipient email:", "example@example.com");
-
-          $.ajax({
-              url: '/files/shareJson', 
-              method: 'POST',
-              contentType: 'application/json',
-              headers: {
-                        'Authorization': 'Bearer ' + FFsession['session_token']
-                      },
-              data: JSON.stringify({ email: recipientEmail, content: jsonString }), 
-              success: function(response) {
-                  alert('The email has been successfully sent.'); 
-              },
-              error: function(xhr, status, error) {
-                  console.error('Fail to send Email:', error);
-                  alert('Email sending failed.'); 
-              }
-          });
-        });
-
-        $('#companyTable tbody').on('click', 'tr', function () {
-            $("#addCompanyBtn").css("display", "none");
-            $("#updateCompanyBtn").css("display", "inline-block");
-            $("#deleteCompanyBtn").css("display", "inline-block");
-            $('#companyDetailModal').modal('show');
-
-            const data = companyTable.row(this).data();
-            $('#modalCompanyTitle').text(data.companyName);
-            $('#companyID').text(data._id);
-            $('#modalCompanyName').val(data.companyName);
-            $('#modalCompanyEnName').val(data.companyEnName);
-            $('#modalIndustry').val(data.industry);
-            $('#modalSummary').val(data.summary);
-            $('#modalComment').val(data.comment); 
-        });
-
-        $('#companyAdd_btn').click(function() {
-            $("#addCompanyBtn").css("display", "inline-block");
-            $("#updateCompanyBtn").css("display", "none");
-            $("#deleteCompanyBtn").css("display", "none");
-            $("#companyDetailModal").modal('show');
-        });
-
-        $('#companyImport_btn').click(async function() {
-          const jsonStr = prompt("Input JSON file here:", "{.....}");
-          if (!jsonStr || jsonStr.trim() === '') {
-            return;
-          }
-          jsonObj = JSON.parse(jsonStr);
-
-          try {
-              const response = await addCompany(jsonObj);
-              console.log(response);
-
-              if (response.status == 'success') { 
-                  companyTable.ajax.reload();
-                  alert('Company added successfully!'); 
-              } else {
-                  alert('Error adding company: ' + response.message); // 서버에서 반환된 오류 메시지 표시
-              }
-          } catch (error) {
-              alert(error.message); // AJAX 요청 오류 처리
-          }
-        });
-        
-        $('#updateCompanyBtn').click(async function() {
-            const companyID = $('#companyID').text();
-            const companyName = $('#modalCompanyName').val(); 
-            const companyEnName = $('#modalCompanyEnName').val();
-            const industry = $('#modalIndustry').val(); 
-            const summary = $('#modalSummary').val(); 
-            const comment = $('#modalComment').val(); 
-
-            try {
-                const response = await $.ajax({
-                    url: `/companies/updateCompany/${companyID}`, 
-                    type: 'PUT',
-                    contentType: 'application/json',
-                    headers: {
-                      'Authorization': 'Bearer ' + FFsession['session_token']
-                    },
-                    data: JSON.stringify({
-                        companyName: companyName,
-                        companyEnName: companyEnName,
-                        industry: industry,
-                        summary: summary,
-                        comment: comment
-                    })
-                });
-
-                if (response.status == 'success') { 
-                    $("#companyDetailModal").modal('hide');
-                    companyTable.ajax.reload();
-                    DefaultCompanyInputField();
-                    alert('Company added successfully!'); 
-
-                } else {
-                    alert('Error adding company: ' + response.message); // 서버에서 반환된 오류 메시지 표시
-                }
-            } catch (error) {
-                alert('Error adding company.'); // AJAX 요청 오류 처리
-            }
-
-        });
-
-        $('#addCompanyBtn').click(async function() {
-          const companyName = $('#modalCompanyName').val(); 
-          const companyEnName = $('#modalCompanyEnName').val();
-          const industry = $('#modalIndustry').val(); 
-          const summary = $('#modalSummary').val(); 
-          const comment = $('#modalComment').val(); 
-
-          const companyData = {
-              companyName: companyName,
-              companyEnName: companyEnName,
-              industry: industry,
-              summary: summary,
-              comment: comment
-          };
-
-          try {
-              const response = await addCompany(companyData);
-
-              if (response.status == 'success') { 
-                  $("#companyDetailModal").modal('hide');
-                  companyTable.ajax.reload();
-                  DefaultCompanyInputField();
-                  alert('Company added successfully!'); 
-              } else {
-                  alert('Error adding company: ' + response.message); // 서버에서 반환된 오류 메시지 표시
-              }
-          } catch (error) {
-              alert(error.message); // AJAX 요청 오류 처리
-          }
-        });
-
-        $('#companyDetailModal').on('click', '#deleteCompanyBtn', function() {
-            const companyID = $('#companyID').text();  
-            if (confirm("정말로 이 파일을 삭제하시겠습니까?")) {
-                $.ajax({
-                    url: `/companies/deleteCompany/${companyID}`,
-                    method: 'DELETE',
-                    headers: {
-                      'Authorization': 'Bearer ' + FFsession['session_token']
-                    },
-                    success: function(response) {
-                        alert('파일이 성공적으로 삭제되었습니다.');
-                        DefaultCompanyInputField();
-                        companyTable.ajax.reload();
-                        $('#companyDetailModal').modal('hide');
-                    },
-                    error: function(xhr, error, thrown) {
-                        alert("파일 삭제 실패: " + (xhr.responseJSON ? xhr.responseJSON.error : thrown));
-                    }
-                });
-            }
-        });
-
-        function DefaultCompanyInputField() {
-          $('#companyID').val('');
-          $('#modalCompanyName').val('');
-          $('#modalCompanyEnName').val('');
-          $('#modalIndustry').val('');
-          $('#modalSummary').val('');
-          $('#modalComment').val('');
-        };
-
-        async function addCompany(companyData) {
-          try {
-              const response = await $.ajax({
-                  url: '/companies/addCompany', 
-                  type: 'POST',
                   headers: {
-                      'Authorization': 'Bearer ' + FFsession['session_token']
-                    },
-                  contentType: 'application/json',
-                  data: JSON.stringify(companyData)
+                            'Authorization': 'Bearer ' + FFsession['session_token']
+                          },
+                  data: JSON.stringify({ email: recipientEmail, content: jsonString }), 
+                  success: function(response) {
+                      alert('The email has been successfully sent.'); 
+                  },
+                  error: function(xhr, status, error) {
+                      console.error('Fail to send Email:', error);
+                      alert('Email sending failed.'); 
+                  }
               });
+            });
 
-              return response; // 응답 반환
-          } catch (error) {
-              throw new Error('Error adding company.'); // 오류 발생 시 예외 던지기
-          }
-        }
-});
-    
+            $('#companyTable tbody').on('click', 'tr', function () {
 
-</script>
+                $("#addCompanyBtn").css("display", "none");
+                $("#updateCompanyBtn").css("display", "inline-block");
+                $("#deleteCompanyBtn").css("display", "inline-block");
+                $('#companyDetailModal').modal('show');
+
+                const data = companyTable.row(this).data();
+                $('#modalCompanyTitle').text(data.companyName);
+                $('#companyID').text(data._id);
+                $('#modalCompanyName').val(data.companyName);
+                $('#modalCompanyEnName').val(data.companyEnName);
+                $('#modalIndustry').val(data.industry);
+                $('#modalSummary').val(data.summary);
+                $('#modalComment').val(data.comment); 
+                const files = data.files ? data.files.split(',').map(file => file.trim()) : [];
+                $('#modalFiles').tagsinput('removeAll');
+                files.forEach(file => {
+                    $('#modalFiles').tagsinput('add', file);
+                });
+            });
+
+            $('#companyAdd_btn').click(function() {
+                $("#addCompanyBtn").css("display", "inline-block");
+                $("#updateCompanyBtn").css("display", "none");
+                $("#deleteCompanyBtn").css("display", "none");
+                $("#companyDetailModal").modal('show');
+            });
+
+            $('#companyImport_btn').click(async function() {
+              const jsonStr = prompt("Input JSON file here:", "{.....}");
+              if (!jsonStr || jsonStr.trim() === '') {
+                return;
+              }
+              jsonObj = JSON.parse(jsonStr);
+
+              try {
+                  const response = await addCompany(jsonObj);
+                  console.log(response);
+
+                  if (response.status == 'success') { 
+                      companyTable.ajax.reload();
+                      alert('Company added successfully!'); 
+                  } else {
+                      alert('Error adding company: ' + response.message); // 서버에서 반환된 오류 메시지 표시
+                  }
+              } catch (error) {
+                  alert(error.message); // AJAX 요청 오류 처리
+              }
+            });
+            
+            $('#updateCompanyBtn').click(async function() {
+                const companyID = $('#companyID').text();
+                const companyName = $('#modalCompanyName').val(); 
+                const companyEnName = $('#modalCompanyEnName').val();
+                const industry = $('#modalIndustry').val(); 
+                const summary = $('#modalSummary').val(); 
+                const comment = $('#modalComment').val(); 
+                const files = $('#modalFiles').val(); 
+
+                try {
+                    const response = await $.ajax({
+                        url: `/companies/updateCompany/${companyID}`, 
+                        type: 'PUT',
+                        contentType: 'application/json',
+                        headers: {
+                          'Authorization': 'Bearer ' + FFsession['session_token']
+                        },
+                        data: JSON.stringify({
+                            companyName: companyName,
+                            companyEnName: companyEnName,
+                            industry: industry,
+                            summary: summary,
+                            comment: comment,
+                            files: files
+                        })
+                    });
+
+                    if (response.status == 'success') { 
+                        $("#companyDetailModal").modal('hide');
+                        companyTable.ajax.reload();
+                        DefaultCompanyInputField();
+                        alert('Company added successfully!'); 
+
+                    } else {
+                        alert('Error adding company: ' + response.message); // 서버에서 반환된 오류 메시지 표시
+                    }
+                } catch (error) {
+                    alert('Error adding company.'); // AJAX 요청 오류 처리
+                }
+
+            });
+
+            $('#addCompanyBtn').click(async function() {
+              const companyName = $('#modalCompanyName').val(); 
+              const companyEnName = $('#modalCompanyEnName').val();
+              const industry = $('#modalIndustry').val(); 
+              const summary = $('#modalSummary').val(); 
+              const comment = $('#modalComment').val(); 
+              const files = $('#modalFiles').val(); 
+
+              const companyData = {
+                  companyName: companyName,
+                  companyEnName: companyEnName,
+                  industry: industry,
+                  summary: summary,
+                  comment: comment,
+                  files: files
+              };
+
+              try {
+                  const response = await addCompany(companyData);
+
+                  if (response.status == 'success') { 
+                      $("#companyDetailModal").modal('hide');
+                      companyTable.ajax.reload();
+                      DefaultCompanyInputField();
+                      alert('Company added successfully!'); 
+                  } else {
+                      alert('Error adding company: ' + response.message); // 서버에서 반환된 오류 메시지 표시
+                  }
+              } catch (error) {
+                  alert(error.message); // AJAX 요청 오류 처리
+              }
+            });
+
+            $('#companyDetailModal').on('click', '#deleteCompanyBtn', function() {
+                const companyID = $('#companyID').text();  
+                if (confirm("정말로 이 파일을 삭제하시겠습니까?")) {
+                    $.ajax({
+                        url: `/companies/deleteCompany/${companyID}`,
+                        method: 'DELETE',
+                        headers: {
+                          'Authorization': 'Bearer ' + FFsession['session_token']
+                        },
+                        success: function(response) {
+                            alert('파일이 성공적으로 삭제되었습니다.');
+                            DefaultCompanyInputField();
+                            companyTable.ajax.reload();
+                            $('#companyDetailModal').modal('hide');
+                        },
+                        error: function(xhr, error, thrown) {
+                            alert("파일 삭제 실패: " + (xhr.responseJSON ? xhr.responseJSON.error : thrown));
+                        }
+                    });
+                }
+            });
+
+            function DefaultCompanyInputField() {
+              $('#companyID').val('');
+              $('#modalCompanyName').val('');
+              $('#modalCompanyEnName').val('');
+              $('#modalIndustry').val('');
+              $('#modalSummary').val('');
+              $('#modalComment').val('');
+              $('#modalFiles').val('');
+            };
+
+            async function addCompany(companyData) {
+              try {
+                  const response = await $.ajax({
+                      url: '/companies/addCompany', 
+                      type: 'POST',
+                      headers: {
+                          'Authorization': 'Bearer ' + FFsession['session_token']
+                        },
+                      contentType: 'application/json',
+                      data: JSON.stringify(companyData)
+                  });
+
+                  return response; // 응답 반환
+              } catch (error) {
+                  throw new Error('Error adding company.'); // 오류 발생 시 예외 던지기
+              }
+            }
+    });
+        
+
+    </script>
 
 </body>
 

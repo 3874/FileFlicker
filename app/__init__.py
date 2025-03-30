@@ -10,6 +10,7 @@ users_collection = None
 projects_collection = None
 files_collection = None
 companies_collection = None
+prompts_collection = None
 
 def create_app():
     app = Flask(__name__)
@@ -54,6 +55,7 @@ def create_app():
     app.register_blueprint(file_bp)
     app.register_blueprint(project_bp)
     app.register_blueprint(company_bp)
+    app.register_blueprint(settings_bp)
     app.register_blueprint(search_bp)
 
     # Set template folder path

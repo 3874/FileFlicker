@@ -1,10 +1,16 @@
-import bcrypt
+import bcrypt, markdown2, json, smtplib, logging, os, urllib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from flask import current_app
 from flask import Blueprint, request, jsonify, render_template, session
 from bson import ObjectId
 from datetime import datetime
 from .. import users_collection, files_collection 
 from ..utils.decorators import login_required
+from ..config.config import Config
+from json2html import json2html
+from ..services.aws_service import AWSService
+from unicodedata import normalize
 
 bp = Blueprint('file', __name__, url_prefix='/files')
 
@@ -63,7 +69,7 @@ def upload_file():
         return jsonify({'error': 'No selected file.'}), 400
 
     normalized_filename = normalize('NFC', file.filename)
-    file_name = urllib.parse.quote(normalized_filename)
+    file_name = normalized_filename
 
     file.seek(0, os.SEEK_END)
     file_size = file.tell()
@@ -71,28 +77,28 @@ def upload_file():
     userId = session['user_id']
 
     try:
-        head_response = s3_client.head_object(Bucket=bucket_name, Key=f'users/drive/{userId}/{file_name}')
-        existing_file_size = head_response['ContentLength']
-        if existing_file_size == file_size:
-            return jsonify({'error': 'File already exists with the same name and size.'}), 400
-    except s3_client.exceptions.ClientError as e:
-        error_code = int(e.response['Error']['Code'])
-        if error_code != 404:
-            logging.error(f"Error checking S3: {e}")
-            return jsonify({'error': 'Error checking file in S3.'}), 500
+        # Check if file exists using check_file_exists method
+        if AWSService.check_file_exists(Config.AWS_S3_BUCKET, f'users/drive/{userId}/{file_name}'):
+            file_metadata = AWSService.get_file_metadata(Config.AWS_S3_BUCKET, f'users/drive/{userId}/{file_name}')
+            if file_metadata and file_metadata['size'] == file_size:
+                return jsonify({'error': 'File already exists with the same name and size.'}), 400
+    except Exception as e:
+        logging.error(f"Error checking S3: {e}")
+        return jsonify({'error': 'Error checking file in S3.'}), 500
 
     try:
-        s3_client.upload_fileobj(file, bucket_name, f'users/drive/{userId}/{file_name}')
-        logging.info(f'File uploaded to S3: {file_name} in bucket {bucket_name}/users/drive/{userId}')
+        # Use upload_file method instead of upload_fileobj
+        if not AWSService.upload_file(file, Config.AWS_S3_BUCKET, f'users/drive/{userId}/{file_name}'):
+            return jsonify({'error': 'Could not upload the file to S3.'}), 500
+        logging.info(f'File uploaded to S3: {file_name} in bucket {Config.AWS_S3_BUCKET}/users/drive/{userId}')
     except Exception as e:
         logging.error(f'Error uploading file to S3: {str(e)}')
         return jsonify({'error': 'Could not upload the file to S3.'}), 500
 
-
     current_time = datetime.now().isoformat()
     new_entry = {
         'file_name': urllib.parse.unquote(file_name),
-        'location': f's3://{bucket_name}/users/drive/{userId}/{file_name}',
+        'location': f's3://{Config.AWS_S3_BUCKET}/users/drive/{userId}/{file_name}',
         'tags': [],
         'summary': '',
         'comments': '',
@@ -103,7 +109,7 @@ def upload_file():
     }
 
     result = files_collection.insert_one(new_entry)
-    new_entry['_id'] = str(result.inserted_id)  # _id를 문자열로 변환
+    new_entry['_id'] = str(result.inserted_id)
 
     return jsonify({'success': True, 'data': new_entry}), 201
 
@@ -134,26 +140,26 @@ def export_file_to_server():
     file.seek(0)
 
     try:
-        head_response = s3_client.head_object(Bucket=bucket_name, Key=f'users/drive/{userId}/{file_name}')
+        head_response = AWSService.head_object(Bucket=Config.AWS_S3_BUCKET, Key=f'users/drive/{userId}/{file_name}')
         existing_file_size = head_response['ContentLength']
         if existing_file_size == file_size:
             return jsonify({'error': 'File already exists with the same name and size.'}), 400
-    except s3_client.exceptions.ClientError as e:
+    except AWSService.exceptions.ClientError as e:
         error_code = int(e.response['Error']['Code'])
         if error_code != 404:
             logging.error(f"Error checking S3: {e}")
             return jsonify({'error': 'Error checking file in S3.'}), 500
 
     try:
-        s3_client.upload_fileobj(file, bucket_name, f'users/drive/{userId}/{file_name}')
-        logging.info(f'File uploaded to S3: {file_name} in bucket {bucket_name}/users/drive/{userId}')
+        AWSService.upload_fileobj(file, Config.AWS_S3_BUCKET, f'users/drive/{userId}/{file_name}')
+        logging.info(f'File uploaded to S3: {file_name} in bucket {Config.AWS_S3_BUCKET}/users/drive/{userId}')
     except Exception as e:
         logging.error(f'Error uploading file to S3: {str(e)}')
         return jsonify({'error': 'Could not upload the file to S3.'}), 500
 
     new_entry = {
         'file_name': file_name,
-        'location': f's3://{bucket_name}/users/drive/{userId}/{file_name}',
+        'location': f's3://{Config.AWS_S3_BUCKET}/users/drive/{userId}/{file_name}',
         'tags': data.get('tags', '').split(',') if data.get('tags') else [],
         'summary': data.get('summary'),
         'comments': data.get('comments'), 
@@ -214,23 +220,21 @@ def remove_file(fileId):
     else:
         return jsonify({'error': 'Invalid S3 location format.'}), 400
 
-    bucket_name, s3_key = s3_location.split('/', 1) 
+    Config.AWS_S3_BUCKET, s3_key = s3_location.split('/', 1) 
 
-    try:
-        s3_client.delete_object(Bucket=bucket_name, Key=s3_key)
-    except Exception as e:
-        logging.error(f'Error deleting file from S3: {str(e)}')
+    # Use AWSService instead of AWSService
+    if not AWSService.delete_file(Config.AWS_S3_BUCKET, s3_key):
         return jsonify({'error': 'Could not delete the file from S3.'}), 500
 
     files_collection.delete_one({'_id': obj_id})
 
     try:
         vector_result = delete_file_from_vectordb(fileId)
-        if vector_result[1] == 500:  # 에러 발생 시
+        if vector_result[1] == 500:
             logging.error('Failed to delete from vector DB but file was deleted from S3 and MongoDB')
     except Exception as e:
         logging.error(f'Error while deleting from vector DB: {str(e)}')
-        # 벡터 DB 삭제 실패해도 진행 (S3와 MongoDB에서는 이미 삭제됨)
+        # Vector DB deletion failure is acceptable (S3 and MongoDB already deleted)
 
     return jsonify({
         'success': True,
@@ -260,7 +264,7 @@ def import_files():
     user_folder = f'users/drive/{userId}'
     
     try:
-        s3_objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=user_folder)
+        s3_objects = AWSService.list_objects_v2(Bucket=Config.AWS_S3_BUCKET, Prefix=user_folder)
 
         if 'Contents' not in s3_objects:
             return jsonify({'status': 'success', 'message': 'No files found in S3.'}), 200
@@ -274,7 +278,7 @@ def import_files():
 
                 new_entry = {
                     'file_name': normalize('NFC',file_name),
-                    'location': f's3://{bucket_name}/{obj["Key"]}',
+                    'location': f's3://{Config.AWS_S3_BUCKET}/{obj["Key"]}',
                     'tags': [],
                     'summary': '',
                     'comments': '',
@@ -291,7 +295,6 @@ def import_files():
         logging.error(f'Error importing files: {str(e)}')
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-
 @bp.route('/fileSearchInVectorDB', methods=['POST'])
 def file_search():
     data = request.get_json()
@@ -299,7 +302,7 @@ def file_search():
     if not isinstance(data, list) or len(data) == 0:
         return jsonify({'error': 'Invalid data format'}), 400
 
-    YlemURL = f"{QR_config.get('n8n_URL')}/webhook/file-search"
+    YlemURL = f"{Config.N8N_URL}/webhook/file-search"
 
     try:
         response = requests.post(
@@ -363,11 +366,7 @@ def download_file(fileId):
     s3_key = file_entry["location"][20:]
 
     try:
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': bucket_name, 'Key': s3_key},
-            ExpiresIn=3600
-        )
+        presigned_url = AWSService.generate_presigned_url(Config.AWS_S3_BUCKET, s3_key, expiration=3600)
         logging.info(f'Generated presigned URL: {presigned_url}')
         return jsonify({'url': presigned_url}), 200
     except Exception as e:
@@ -400,7 +399,7 @@ def store_in_vector_db(fileId):
             }), 400
 
         try:
-            response = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+            response = AWSService.get_object(Bucket=Config.AWS_S3_BUCKET, Key=s3_key)
             file_content = response['Body'].read()
         except Exception as e:
             logging.error(f'Error downloading file from S3: {str(e)}')
@@ -455,7 +454,7 @@ def store_in_vector_db(fileId):
                     'message': 'Unsupported file type'
                 }), 400
 
-            webhook_url = f"{QR_config.get('n8n_URL')}/webhook/storeinvetordb"
+            webhook_url = f"{Config.N8N_URL}/webhook/storeinvetordb"
 
             payload = {
                 "fileId": str(fileId), 
@@ -510,8 +509,10 @@ def share_file():
     s3_key = data.get('s3_key')
     fileName = data.get('fileName')
     recipient_email = data.get('email')
-    revised_s3_key = s3_key.replace(f"s3://{bucket_name}/", '')
-    Targeturl = generate_presigned_url(bucket_name, revised_s3_key)
+    summary = data.get('summary')
+    summary_html = markdown2.markdown(summary) if summary else ''
+    revised_s3_key = s3_key.replace(f"s3://{Config.AWS_S3_BUCKET}/", '')
+    Targeturl = AWSService.generate_presigned_url(Config.AWS_S3_BUCKET, revised_s3_key)
     subject = "File is shared by FileFlicker."
 
     email_content = f"""
@@ -519,6 +520,11 @@ def share_file():
         <br>
         <p>I hope this message finds you well.</p>
         <p>I wanted to let you know that the file '{fileName}' has been shared with you by '{session['user_id']}' through FileFlicker.</p>
+        <br>
+        <p>Here is a summary of the file:</p>
+        <div class="markdown-content">
+            {summary_html}
+        </div>
         <br>
         <p>To download the file, please click on the following link:</p>
         <p><a href="{Targeturl}">Click here to download the file</a></p>
@@ -534,9 +540,97 @@ def share_file():
     result = send_email(recipient_email, subject, email_content)
     return jsonify(result), 200 if result['status'] == 'success' else 500
 
+@bp.route('/shareHTML', methods=['POST'])
+@login_required
+def share_HTML():
+    data = request.get_json()
+    if not data:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON data.'}), 400
+    recipient_email = data.get('email')
+    content = json.loads(data.get('content'))
+    content_html = markdown2.markdown(content)
+    subject = "File is shared by FileFlicker."
+
+    email_content = f"""
+        <p>Dear {recipient_email},</p>
+        <br>
+        <p>I hope this message finds you well.</p>
+        <p>I wanted to let you know that the a file has been shared with you by '{session['user_id']}' through FileFlicker.</p>
+        <br>
+        <div>
+        {content_html}
+        </div>
+        <br>
+        <p>If you have any questions or need further assistance, please feel free to reach out.</p>
+        <br>
+        <p>Best regards,</p>
+        <p>The FileFlicker Team</p>
+        <br>
+        <p>Brought to you by FileFlicker</p>
+    """
+    result = send_email(recipient_email, subject, email_content)
+    return jsonify(result), 200 if result['status'] == 'success' else 500
+
+@bp.route('/shareJson', methods=['POST'])
+@login_required
+def share_json():
+    data = request.get_json()
+    if not data:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON data.'}), 400
+
+    content = data.get('content')
+    recipient_email = data.get('email')
+    jcontent = json.loads(content)
+    summary = jcontent.get('summary')
+    summary_html = markdown2.markdown(summary) if summary else ''
+    subject = "File is shared by FileFlicker."
+    email_content = f"""
+        <p>Dear {recipient_email},</p>
+        <br>
+        <p>I hope this message finds you well.</p>
+        <p>I wanted to let you know that the JSON file of a company has been shared with you by '{session['user_id']}' through FileFlicker.</p>
+        <br>
+        <p>Company Name:{jcontent.get('companyName')}</p>
+        <p>Company Name (Enligsh):{jcontent.get('companyEnName')}</p>
+        <p>Summary:</p>
+        {summary_html}
+        <br>
+        <p>If you have any questions or need further assistance, please feel free to reach out.</p>
+        <br>
+        <p>Best regards,</p>
+        <p>The FileFlicker Team</p>
+        <br>
+        <p>Brought to you by FileFlicker</p>
+    """
+    
+    result = send_email(recipient_email, subject, email_content)
+    return jsonify(result), 200 if result['status'] == 'success' else 500
+    
+
+def send_email(recipient_email, subject, content):
+    sender_email = Config.SENDER_EMAIL  
+    sender_password = Config.SENDER_PWD
+
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = recipient_email
+    msg['Subject'] = subject
+    
+    msg.attach(MIMEText(content, 'html'))
+    
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()  
+            server.login(sender_email, sender_password) 
+            server.send_message(msg)  
+        return {'status': 'success', 'message': 'Email sent successfully!'}
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
+
+
 def delete_file_from_vectordb(fileId):
     try:
-        client = QdrantClient(url=QR_config["QDRANT_URL"])
+        client = QdrantClient(url=Config.QDRANT_URL)
         
         filter = Filter(
             must=[
@@ -562,92 +656,3 @@ def delete_file_from_vectordb(fileId):
         logging.error(f'Error deleting from vector DB: {str(e)}')
         return jsonify({'error': 'Could not delete from vector DB.'}), 500
 
-
-@bp.route('/shareHTML', methods=['POST'])
-@login_required
-def share_HTML():
-    data = request.get_json()
-    if not data:
-        return jsonify({'status': 'error', 'message': 'Invalid JSON data.'}), 400
-
-    content = data.get('content')
-    recipient_email = data.get('email')
-    subject = "File is shared by FileFlicker."
-
-    email_content = f"""
-        <p>Dear {recipient_email},</p>
-        <br>
-        <p>I hope this message finds you well.</p>
-        <p>I wanted to let you know that the a file has been shared with you by '{session['user_id']}' through FileFlicker.</p>
-        <br>
-        <div>
-        <p>{content}</p>
-        </div>
-        <br>
-        <p>If you have any questions or need further assistance, please feel free to reach out.</p>
-        <br>
-        <p>Best regards,</p>
-        <p>The FileFlicker Team</p>
-        <br>
-        <p>Brought to you by FileFlicker</p>
-    """
-    
-    result = send_email(recipient_email, subject, email_content)
-    return jsonify(result), 200 if result['status'] == 'success' else 500
-
-@bp.route('/shareJson', methods=['POST'])
-@login_required
-def share_json():
-    data = request.get_json()
-    if not data:
-        return jsonify({'status': 'error', 'message': 'Invalid JSON data.'}), 400
-    
-    content = data.get('content')
-    recipient_email = data.get('email')
-    subject = "JSON text is shared by FileFlicker."
-
-    email_content = f"""
-        <p>Dear {recipient_email},</p>
-        <br>
-        <p>I hope this message finds you well.</p>
-        <p>I wanted to let you know that the JSON file of a company has been shared with you by '{session['user_id']}' through FileFlicker.</p>
-        <br>
-        <p>To view and copy the JSON content, please follow these steps:</p>
-        <ol>
-            <li>Click on the following text to open the JSON content in a new tab:</li>
-            <li>{content}</li>
-            <li>Once the JSON content is displayed, select all the text (Ctrl+A or Cmd+A) and copy it (Ctrl+C or Cmd+C).</li>
-            <li>Visit FileFlicker and import this into the my companies page.</li>
-        </ol>
-        <br>
-        <p>If you have any questions or need further assistance, please feel free to reach out.</p>
-        <br>
-        <p>Best regards,</p>
-        <p>The FileFlicker Team</p>
-        <br>
-        <p>Brought to you by FileFlicker</p>
-    """
-    
-    result = send_email(recipient_email, subject, email_content)
-    return jsonify(result), 200 if result['status'] == 'success' else 500
-
-
-def send_email(recipient_email, subject, content):
-    sender_email = QR_config["SENDER_EMAIL"]
-    sender_password = QR_config["SENDER_PWD"]
-    
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = recipient_email
-    msg['Subject'] = subject
-    
-    msg.attach(MIMEText(content, 'html'))
-    
-    try:
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.starttls()  
-            server.login(sender_email, sender_password) 
-            server.send_message(msg)  
-        return {'status': 'success', 'message': 'Email sent successfully!'}
-    except Exception as e:
-        return {'status': 'error', 'message': str(e)}

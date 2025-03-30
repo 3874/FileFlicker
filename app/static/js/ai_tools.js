@@ -53,7 +53,7 @@ async function SearchInFileInVectorDB(query, fileId) {
 }
 
 async function AISearch(chatInput) {
-    const url = '/AISearch'; // 서버의 엔드포인트 URL
+    const url = '/search/AISearch'; // 서버의 엔드포인트 URL
     const data = [{ chatInput }]; // 요청할 데이터 형식에 맞게 배열로 감싸기
 
     try {

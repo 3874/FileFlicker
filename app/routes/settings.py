@@ -1,7 +1,5 @@
-import bcrypt
 from flask import current_app
 from flask import Blueprint, request, jsonify, render_template, session
-from bson import ObjectId
 from datetime import datetime
 from .. import prompts_collection
 from ..utils.decorators import login_required
@@ -49,10 +47,10 @@ def get_settings():
         FF_configs = json.load(json_file2)
     return jsonify({'success': True, 'data': FF_configs}), 200
 
-
-@bp.route('/getPrompts', methods=['GET'])
+@bp.route('/getPrompts', methods=['POST'])
 @login_required
 def get_prompts():
+    data = request.get_json()
     user_id = session['user_id']
     contents = prompts_collection.find_one({'user_id': user_id})
     

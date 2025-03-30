@@ -18,6 +18,7 @@ $(document).ready(function() {
           name: $('#profile_name').val(), 
           hire_date: $('#profile_hire_date').val(), 
           role: $('#profile_role').val(),
+          language: $('#profile_lang').val(),
         };
 
         $.ajax({
@@ -70,9 +71,10 @@ function profileDataMapping(info) {
 
     $('#profileId').val(info._id); 
     $('#profile_ID').val(info.ID); 
-    $('#profile_name').val(info.name); // 사용자 이름
-    $('#profile_hire_date').val(info.hire_date); // 고용 날짜
-    $('#profile_role').val(info.role); // 역할
+    $('#profile_name').val(info.name); 
+    $('#profile_hire_date').val(info.hire_date); 
+    $('#profile_role').val(info.role); 
+    $('#profile_lang').val(info.language); 
     // profile 
     $('#profileName1').text(info.name); 
     $('#profileName2').text(info.name); 
@@ -121,7 +123,7 @@ function ProfileModal() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="addUserBtn">Update My Profile</h4>
+                        <h4 class="modal-title" id="addUserBtn">My Profile</h4>
                     </div>
                     <div class="modal-body">
                         <form id="UserForm">
@@ -136,6 +138,13 @@ function ProfileModal() {
                             <div class="form-group">
                                 <label for="profile_hire_date">Hire Date</label>
                                 <input type="date" class="form-control" id="profile_hire_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile_lang">Language</label>
+                                <select class="form-control" id="profile_lang">
+                                    <option value="en">English</option>
+                                    <option value="ko">Korean</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="profile_role">Role</label>
@@ -260,6 +269,16 @@ async function getUser(userId, sessionToken) {
     }
 }
 
+function getLanguage(langcode) {
+    if (langcode == 'ko') {
+        return 'Korean';
+    } else if (langcode == 'en') {
+        return 'English';
+    } else {
+        return 'Unknown';
+    }
+}
+
 function splitIntoChunks(text, maxLength) {
     const chunks = [];
     let sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
@@ -284,3 +303,4 @@ function splitIntoChunks(text, maxLength) {
 }
 
 const truncateText = (text, maxLength) => text.length <= maxLength ? text : text.slice(0, maxLength - 3) + '...';
+

@@ -163,9 +163,7 @@
                     <hr>
                     <h6>Comment:</h6>
                     <textarea id="modalComment" style="font-size: 12px; width: 100%;" rows="10"></textarea>
-                    <hr>
-                    <h6>Files: </h6>
-                    <textarea id="modalFiles" style="font-size: 12px; width: 100%;" rows="10"></textarea>
+
                 </div>
                 <div class="modal-footer">
                     <button id="addCompanyBtn" class="btn btn-danger">Add</button>
@@ -188,6 +186,8 @@
     <script>
         let pLength = 25;
         let companyTable;
+        let lang = 'en';
+        let language = '';
 
         $(document).ready(async function() {
           const FFsession = getSessionFromMemory();
@@ -195,6 +195,8 @@
           if (resp && resp.status == 'success') {
             ProfileModal();
             profileDataMapping(resp.data);
+            lang = resp.data.language;
+            language = getLanguage(lang);
           } else {
             alert('No profile');
           }
@@ -233,7 +235,7 @@
               let comInd = $('#modalIndustry').val();
               let comSum = $('#modalSummary').val();
               let companyName = $('#modalCompanyName').val();
-              let query = `After looking for the information and news about ${companyName} ${comEName} ${comInd} ${comSum}, summarize these in the primary language`;
+              let query = `After looking for the information and news about ${companyName} ${comEName} ${comInd} ${comSum}, summarize these in ${language}`;
               
               $('#loadingOverlay').show();
                     
@@ -316,11 +318,6 @@
                 $('#modalIndustry').val(data.industry);
                 $('#modalSummary').val(data.summary);
                 $('#modalComment').val(data.comment); 
-                const files = data.files ? data.files.split(',').map(file => file.trim()) : [];
-                $('#modalFiles').tagsinput('removeAll');
-                files.forEach(file => {
-                    $('#modalFiles').tagsinput('add', file);
-                });
             });
 
             $('#companyAdd_btn').click(function() {
@@ -359,7 +356,6 @@
                 const industry = $('#modalIndustry').val(); 
                 const summary = $('#modalSummary').val(); 
                 const comment = $('#modalComment').val(); 
-                const files = $('#modalFiles').val(); 
 
                 try {
                     const response = await $.ajax({
@@ -374,8 +370,7 @@
                             companyEnName: companyEnName,
                             industry: industry,
                             summary: summary,
-                            comment: comment,
-                            files: files
+                            comment: comment
                         })
                     });
 
@@ -400,15 +395,13 @@
               const industry = $('#modalIndustry').val(); 
               const summary = $('#modalSummary').val(); 
               const comment = $('#modalComment').val(); 
-              const files = $('#modalFiles').val(); 
 
               const companyData = {
                   companyName: companyName,
                   companyEnName: companyEnName,
                   industry: industry,
                   summary: summary,
-                  comment: comment,
-                  files: files
+                  comment: comment
               };
 
               try {
@@ -456,7 +449,6 @@
               $('#modalIndustry').val('');
               $('#modalSummary').val('');
               $('#modalComment').val('');
-              $('#modalFiles').val('');
             };
 
             async function addCompany(companyData) {

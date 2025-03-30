@@ -215,6 +215,8 @@
   <script>
       let pLength = 25;
       let fileTable;
+      let lang = 'en';
+      let language = '';
 
       $(document).ready(async function() {
         const FFsession = getSessionFromMemory();
@@ -222,6 +224,8 @@
         if (resp && resp.status == 'success') {
           ProfileModal();
           profileDataMapping(resp.data);
+          lang = resp.data.language;
+          language = getLanguage(lang);
         } else {
           alert('No profile');
         }
@@ -385,7 +389,7 @@
             if(textContent.length > MaxLength) {
                 textContent = textContent.slice(0, MaxLength);
             }
-            let Resp = await AISearch(`Brief this clearly and neatly in the original language: ${textContent}`);
+            let Resp = await AISearch(`Brief this clearly and neatly in ${language}: ${textContent}`);
             if (!Resp || Resp.status === 'error') {
               $('#loadingOverlay').hide();
               alert('AI request failed');

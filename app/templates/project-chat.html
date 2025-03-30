@@ -314,91 +314,95 @@
     <script src="/static/js/basic.js"></script>
     <script src="/static/js/ai_tools.js"></script>
     <script>
-    $(document).ready(function() {
+    $(document).ready(async function() {
         let shared_users;
-        let onePagePrompt = `
-        You are a professional venture capitalist and strategic evaluator.
-
-        You will receive a raw, unstructured description of a startup.  
-        Your task is to perform a 4-step process:
-
-        ---
-        **Step 1 — Extraction**
-        Carefully analyze the input text and extract the following fields. If any information is missing, leave that field empty ("").
-
-        {
-        "company_name": "",
-        "tagline": "",
-        "industry": "",
-        "problem": "",
-        "solution": "",
-        "market_opportunity": "",
-        "business_model": "",
-        "traction": "",
-        "team": "",
-        "funding_ask": "",
-        "contact": ""
-        }
-
-        For the fields "problem", "solution", "market_opportunity", "business_model", "traction", write them in detailed, clear, and persuasive English, suitable for global venture capital audiences.
-
-        ---
-        **Step 2 — Solution Evaluation & Suggestion**
-        Evaluate whether the provided solution actually addresses the problem effectively. If it does, explain why. If not, explain why not.
-        Then, based on your domain knowledge, propose an additional or alternative solution that could strengthen the startup's strategy. Describe how this new solution is different from the original.
-
-        Output format:
-        {
-        "solution_evaluation": "",
-        "additional_solution": "",
-        "difference_from_original_solution": ""
-        }
-
-        ---
-        **Step 3 — Market Opportunity Evaluation**
-        Evaluate whether the market opportunity described in the input is large and attractive enough.  
-        If the description lacks depth, supplement it with your own analysis of market trends, data, or potential.  
-        Compare the original market opportunity statement with your extended analysis and explain the difference.
-
-        Output format:
-        {
-        "market_opportunity_evaluation": "",
-        "extended_market_opportunity": "",
-        "difference_from_original_market_opportunity": ""
-        }
-
-        ---
-        **Step 4 — Business Model & Traction Assessment**
-        1. Evaluate whether the business model described is commercially viable and scalable.  
-        Provide your assessment and suggestions if the model is weak or incomplete.
-        2. Evaluate whether the traction described is strong enough to attract global investors.  
-        If it is not, explain what is missing and what kind of traction would be more convincing.
-
-        Output format:
-        {
-        "business_model_evaluation": "",
-        "business_model_suggestion": "",
-        "traction_evaluation": "",
-        "traction_suggestion": ""
-        }
-
-        ---
-        **Final Output**
-        Combine all outputs (Step 1 to Step 4) into a single, well-structured JSON object under the following format:
-
-        {
-        "one_pager": { ...Step 1 Output... },
-        "solution_review": { ...Step 2 Output... },
-        "market_opportunity_review": { ...Step 3 Output... },
-        "business_model_and_traction_review": { ...Step 4 Output... }
-        }
-
-        Do not include any extra text, explanation, or formatting outside the JSON object.  
-        The entire output must be in strict JSON format only.
-        The language of all content must be professional, fluent, persuasive English.
-        Now, process the following startup description:
-        `;
         const FFsession = getSessionFromMemory();
+        let resp = await getUser(FFsession['user_id'], FFsession['session_token']);
+        let lang = 'en';
+        lang = resp.data.language;
+        let language = getLanguage(lang);
+        let onePagePrompt = `
+            You are a professional venture capitalist and strategic evaluator.
+
+            You will receive a raw, unstructured description of a startup.  
+            Your task is to perform a 4-step process:
+
+            ---
+            **Step 1 — Extraction**
+            Carefully analyze the input text and extract the following fields. If any information is missing, leave that field empty ("").
+
+            {
+            "company_name": "",
+            "tagline": "",
+            "industry": "",
+            "problem": "",
+            "solution": "",
+            "market_opportunity": "",
+            "business_model": "",
+            "traction": "",
+            "team": "",
+            "funding_ask": "",
+            "contact": ""
+            }
+
+            For the fields "problem", "solution", "market_opportunity", "business_model", "traction", write them in detailed, clear, and persuasive ${language}, suitable for global venture capital audiences.
+
+            ---
+            **Step 2 — Solution Evaluation & Suggestion**
+            Evaluate whether the provided solution actually addresses the problem effectively. If it does, explain why. If not, explain why not.
+            Then, based on your domain knowledge, propose an additional or alternative solution that could strengthen the startup's strategy. Describe how this new solution is different from the original.
+
+            Output format:
+            {
+            "solution_evaluation": "",
+            "additional_solution": "",
+            "difference_from_original_solution": ""
+            }
+
+            ---
+            **Step 3 — Market Opportunity Evaluation**
+            Evaluate whether the market opportunity described in the input is large and attractive enough.  
+            If the description lacks depth, supplement it with your own analysis of market trends, data, or potential.  
+            Compare the original market opportunity statement with your extended analysis and explain the difference.
+
+            Output format:
+            {
+            "market_opportunity_evaluation": "",
+            "extended_market_opportunity": "",
+            "difference_from_original_market_opportunity": ""
+            }
+
+            ---
+            **Step 4 — Business Model & Traction Assessment**
+            1. Evaluate whether the business model described is commercially viable and scalable.  
+            Provide your assessment and suggestions if the model is weak or incomplete.
+            2. Evaluate whether the traction described is strong enough to attract global investors.  
+            If it is not, explain what is missing and what kind of traction would be more convincing.
+
+            Output format:
+            {
+            "business_model_evaluation": "",
+            "business_model_suggestion": "",
+            "traction_evaluation": "",
+            "traction_suggestion": ""
+            }
+
+            ---
+            **Final Output**
+            Combine all outputs (Step 1 to Step 4) into a single, well-structured JSON object under the following format:
+
+            {
+            "one_pager": { ...Step 1 Output... },
+            "solution_review": { ...Step 2 Output... },
+            "market_opportunity_review": { ...Step 3 Output... },
+            "business_model_and_traction_review": { ...Step 4 Output... }
+            }
+
+            Do not include any extra text, explanation, or formatting outside the JSON object.  
+            The entire output must be in strict JSON format only.
+            The language of all content must be professional, fluent, persuasive ${language}.
+            Now, process the following startup description:
+            `;
 
         const urlParams = new URLSearchParams(window.location.search);
         const projectId = urlParams.get('projectId');
@@ -846,7 +850,7 @@
             console.log(extContent);
             let finalText = extractTextFromHTML(extContent);
             finalText = finalText.replace(/\n/g, '');
-            let query = `Extract the meaningful text from this HTML file and provide a neatly formatted briefing document in the primary language of the text, including: (1) a concise title, (2) key bullet points, and (3) a short summary paragraph.: ${finalText}`;
+            let query = `Extract the meaningful text from this HTML file and provide a neatly formatted briefing document in ${language}, including: (1) a concise title, (2) key bullet points, and (3) a short summary paragraph.: ${finalText}`;
             let LLresp = await sendMessageToAI(query, projectId);
             if (LLresp) {
                 $('#loadingOverlay').hide(); 

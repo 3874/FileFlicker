@@ -144,6 +144,8 @@
     <script>
         let pLength = 25;
         let projectTable; 
+        let lang = 'en';
+        let language = '';
     
         $(document).ready(async function() {
             const FFsession = getSessionFromMemory();
@@ -156,6 +158,8 @@
             if (resp && resp.status == 'success') {
               ProfileModal();
               profileDataMapping(resp.data);
+              lang = resp.data.language;
+              language = getLanguage(lang);
             } else {
               alert('No profile');
             }

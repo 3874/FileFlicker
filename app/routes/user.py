@@ -47,15 +47,15 @@ def add_user():
     # 사용자 정보를 데이터베이스에 저장
     user_data = {
         'ID': data['ID'],
-        'password': hashed_password,  # 해시된 비밀번호 저장
+        'password': hashed_password,
+        'name': '',
         'role': 'pending',
+        'language': 'en',
         'createdAt': datetime.now(),
         'updatedAt': datetime.now(),
     }
 
-    # 사용자 추가
     users_collection.insert_one(user_data)
-
     return jsonify({'status': 'success', 'message': 'User added successfully'}), 201
 
 @bp.route('/updateUser/<user_id>', methods=['PUT'])
@@ -64,11 +64,11 @@ def update_user(user_id):
     try:
         data = request.json
         
-        # 비밀번호가 없을 경우 비밀번호 업데이트를 생략
         update_fields = {
             'ID': data.get('ID'),
             'name': data.get('name', ''),
             'role': data.get('role', ''),
+            'language': data.get('language', ''),
             'hire_date': data.get('hire_date', ''),
             'updatedAt': datetime.now()
         }
@@ -108,6 +108,7 @@ def get_user(user_id):
             'ID': user.get('ID', ''),
             'name': user.get('name', ''),
             'role': user.get('role', ''),
+            'language': user.get('language', ''),
             'hire_date': user.get('hire_date', ''), 
             'createdAt': user.get('createdAt').isoformat() if isinstance(user.get('createdAt'), datetime) else '',
             'updatedAt': user.get('updatedAt').isoformat() if isinstance(user.get('updatedAt'), datetime) else '',

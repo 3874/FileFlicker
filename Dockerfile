@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 21213
 
 # Command to run the application
-CMD ["python", "run.py"]
+CMD ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=21213"]

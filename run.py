@@ -10,4 +10,4 @@ def favicon():
                              'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=21213, debug=True, threaded=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=21213, debug=True)
